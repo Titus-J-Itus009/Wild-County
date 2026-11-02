@@ -1,0 +1,172 @@
+Animal GLB models
+==================
+
+Source: Poly Pizza / Quaternius
+License: CC0 1.0 Universal
+License URL: https://creativecommons.org/publicdomain/zero/1.0/
+
+deer.glb
+https://poly.pizza/m/TM8F7JQkGm
+https://static.poly.pizza/4b6c2a41-43c7-404c-ae37-e8c4645ff93b.glb
+
+stag.glb
+https://poly.pizza/m/tQdzbZ1Cmw
+https://static.poly.pizza/a9c69fbc-bf7c-4585-9a49-a82e0be1ac6b.glb
+
+antlers.glb
+https://poly.pizza/m/9oH6TjelO-W
+https://static.poly.pizza/5c3c13da-a024-489c-8330-cef4afc6d475.glb
+Creator: Poly by Google
+License: Creative Commons Attribution 3.0 (CC BY 3.0)
+License URL: https://creativecommons.org/licenses/by/3.0/
+Attribution: "Antlers" by Poly by Google, via Poly Pizza, licensed under CC BY 3.0.
+
+horse.glb
+https://poly.pizza/m/qvTrSG9pZF
+https://static.poly.pizza/d37dbc87-ca61-4b2c-a2da-d2f0c4240bef.glb
+
+CC0 models require no attribution, although crediting Quaternius is appreciated.
+
+rifle.glb
+https://poly.pizza/m/ASOMZIErq3
+https://static.poly.pizza/f03e21b7-e3b7-49fd-b47d-d1908649fcee.glb
+License: CC0 1.0 Universal
+License URL: https://creativecommons.org/publicdomain/zero/1.0/
+The model is a detailed Quaternius sniper rifle with barrel, stock, receiver, scope, and glass geometry. It is intentionally rendered only as a local GLB; the game has no primitive rifle fallback.
+
+cow.glb
+https://poly.pizza/m/5XSc2Fka3F
+https://static.poly.pizza/48c5f4af-07d6-4493-a261-0919967afe85.glb
+Creator: Quaternius
+License: CC0 1.0 Universal
+License URL: https://creativecommons.org/publicdomain/zero/1.0/
+
+bull.glb
+https://poly.pizza/m/a8PIIYwF7r
+https://static.poly.pizza/5704ef69-2c27-4de8-a942-70a29458af21.glb
+Creator: Quaternius
+License: CC0 1.0 Universal
+License URL: https://creativecommons.org/publicdomain/zero/1.0/
+
+elk.glb
+https://poly.pizza/m/93ddInBKzDw
+https://static.poly.pizza/c09aef61-3173-4016-bc64-95faa7f47d6c.glb
+Creator: Poly by Google
+License: Creative Commons Attribution 3.0 (CC BY 3.0)
+License URL: https://creativecommons.org/licenses/by/3.0/
+Attribution: "Elk" by Poly by Google, via Poly Pizza, licensed under CC BY 3.0.
+This GLB has no embedded animation clips.
+
+cowboy.glb
+https://poly.pizza/m/S8hq7LEXTT
+https://static.poly.pizza/74206fe3-292e-4917-a116-7aed96012d3c.glb.br
+Creator: mastjie
+License: CC0 1.0 Universal
+License URL: https://creativecommons.org/publicdomain/zero/1.0/
+The source is a single static mesh with no skeleton or animation clips.
+
+saddle.glb
+https://poly.pizza/m/dSMm_V4sKNr
+https://static.poly.pizza/aa2e4197-751b-4d0d-a675-a9f6efcd928d.glb.br
+Creator: Poly by Google
+License: Creative Commons Attribution 3.0 (CC BY 3.0)
+License URL: https://creativecommons.org/licenses/by/3.0/
+Attribution: "Saddle" by Poly by Google, via Poly Pizza, licensed under CC BY 3.0.
+The model includes stirrups.
+
+trees-quaternius.glb
+https://poly.pizza/m/etFGNvsiFv
+https://static.poly.pizza/53a83125-e16a-4024-b8f6-1e72679c7ddf.glb
+Creator: Quaternius
+License: CC0 1.0 Universal
+License URL: https://creativecommons.org/publicdomain/zero/1.0/
+
+tree-google.glb
+https://poly.pizza/m/6pwiq7hSrHr
+https://static.poly.pizza/25df0593-9c28-4487-81dc-1ff8ec9527dc.glb
+Creator: Poly by Google
+License: Creative Commons Attribution 3.0 (CC BY 3.0)
+License URL: https://creativecommons.org/licenses/by/3.0/
+Attribution: "Tree" by Poly by Google, via Poly Pizza, licensed under CC BY 3.0.
+
+pine-trees-quaternius.glb
+https://poly.pizza/m/oYtDty0fR6
+https://static.poly.pizza/1d499f8b-5a1b-4966-9a35-10c0d3841e91.glb
+Creator: Quaternius
+License: CC0 1.0 Universal
+License URL: https://creativecommons.org/publicdomain/zero/1.0/
+
+birch-trees.glb
+https://poly.pizza/m/R7qMWzb7nk
+https://static.poly.pizza/457b2397-4bfb-41c4-862d-82d1592b2a5f.glb
+Creator: Quaternius
+License: CC0 1.0 Universal
+License URL: https://creativecommons.org/publicdomain/zero/1.0/
+
+spruce-tree.glb
+https://poly.pizza/m/ahT2_ZxtLIq
+https://static.poly.pizza/f3fb65ab-0812-4182-8274-f0fe43628640.glb
+Creator: Poly by Google
+License: Creative Commons Attribution 3.0 (CC BY 3.0)
+License URL: https://creativecommons.org/licenses/by/3.0/
+Attribution: "Spruce tree" by Poly by Google, via Poly Pizza, licensed under CC BY 3.0.
+
+fir-tree.glb
+https://poly.pizza/m/5mED_iGhudj
+https://static.poly.pizza/002ce822-7954-4ae9-b1f3-cab356cbe924.glb
+Creator: Poly by Google
+License: Creative Commons Attribution 3.0 (CC BY 3.0)
+License URL: https://creativecommons.org/licenses/by/3.0/
+Attribution: "Fir tree" by Poly by Google, via Poly Pizza, licensed under CC BY 3.0.
+
+oak-tree.glb
+https://poly.pizza/m/0DtsZfSTWzA
+https://static.poly.pizza/cdbbf97e-2ccf-482f-86ba-b903ac513c63.glb
+Creator: Poly by Google
+License: Creative Commons Attribution 3.0 (CC BY 3.0)
+License URL: https://creativecommons.org/licenses/by/3.0/
+Attribution: "Oak tree" by Poly by Google, via Poly Pizza, licensed under CC BY 3.0.
+
+poplar-tree.glb
+https://poly.pizza/m/2y-Cl3E7lMf
+https://static.poly.pizza/fdaf9bde-7081-4c1c-a31c-66280b9f1c64.glb
+Creator: Poly by Google
+License: Creative Commons Attribution 3.0 (CC BY 3.0)
+License URL: https://creativecommons.org/licenses/by/3.0/
+Attribution: "Poplar Tree" by Poly by Google, via Poly Pizza, licensed under CC BY 3.0.
+Used as an Aspen-like species; the model is identified as Poplar by its source.
+
+low-poly-landscape.glb
+https://poly.pizza/m/bjsNFfddgOv
+https://static.poly.pizza/8a77e348-dd7d-4299-a1be-e6558e3a603b.glb
+Creator: sirkitree
+License: Creative Commons Attribution 3.0 (CC BY 3.0)
+License URL: https://creativecommons.org/licenses/by/3.0/
+Attribution: "Low-poly landscape" by sirkitree, via Poly Pizza, licensed under CC BY 3.0.
+This stylized mountain-and-valley scene has no shed, trees, or collision data.
+
+dog-generic.glb
+https://poly.pizza/m/24WsfFi7Q8s
+https://static.poly.pizza/75de184c-31e8-4343-8ce3-ffaaf256c32e.glb
+Creator: Poly by Google
+License: Creative Commons Attribution 3.0 (CC BY 3.0)
+License URL: https://creativecommons.org/licenses/by/3.0/
+Attribution: "Dog" by Poly by Google, via Poly Pizza, licensed under CC BY 3.0.
+Used for the Labrador retriever and Australian shepherd options because no exact breed model is included.
+
+dog-shepherd.glb
+https://poly.pizza/m/Hssa6NPc6W
+https://static.poly.pizza/f11b6abc-28a4-4d23-bfce-679a8e2b9da1.glb
+Creator: Quaternius
+License: Creative Commons Attribution 3.0 (CC BY 3.0)
+License URL: https://creativecommons.org/licenses/by/3.0/
+Attribution: "German Shepard" by Quaternius, via Poly Pizza, licensed under CC BY 3.0.
+
+dog-beagle.glb
+https://poly.pizza/m/0BnDT3T1wTE
+https://static.poly.pizza/ba6d0ee3-bcc0-4ef0-9d3c-a3e245b41c77.glb
+Creator: Poly by Google
+License: Creative Commons Attribution 3.0 (CC BY 3.0)
+License URL: https://creativecommons.org/licenses/by/3.0/
+Attribution: "Beagle" by Poly by Google, via Poly Pizza, licensed under CC BY 3.0.
+Used as the closest available hound model for the Bloodhound option.

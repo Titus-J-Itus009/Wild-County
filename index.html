@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wild Country</title>
+  <link rel="stylesheet" href="style.css?v=20261101-customization-menu" />
+</head>
+<body>
+  <div id="game"></div>
+  <div id="cabinTransition" aria-hidden="true"></div>
+  <div id="overlay">
+    <div class="brand-emblem" aria-hidden="true">
+      <svg viewBox="0 0 280 210" role="presentation">
+        <defs>
+          <linearGradient id="brand-metal" x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0" stop-color="#f3e5bf" />
+            <stop offset=".48" stop-color="#a9844c" />
+            <stop offset="1" stop-color="#e5d2a4" />
+          </linearGradient>
+        </defs>
+        <path class="emblem-ring" d="M37 145a103 103 0 0 1 206 0" />
+        <path class="emblem-antler" d="M139 119c-18-15-26-35-27-58-8 9-16 14-27 17 4-13 9-22 18-31-13 4-25 4-38 0 8 12 14 22 17 36-12-5-21-13-29-24-1 18 2 34 12 49 10 13 22 20 38 25m37-14c18-15 26-35 27-58 8 9 16 14 27 17-4-13-9-22-18-31 13 4 25 4 38 0-8 12-14 22-17 36 12-5 21-13 29-24 1 18-2 34-12 49-10 13-22 20-38 25" />
+        <path class="emblem-deer" d="M140 64c-12 0-20 10-19 22l5 23 14 12 14-12 5-23c1-12-7-22-19-22Zm-17 16-14-9 4 17 10 5m31-13 14-9-4 17-10 5M132 118l-7 14 7 15m16-29 7 14-7 15" />
+        <path class="emblem-compass" d="m140 163 8 18-8-5-8 5 8-18Zm0-9v-9m0 48v-9m-19-11h9m20 0h9" />
+        <circle class="emblem-center" cx="140" cy="174" r="20" />
+      </svg>
+    </div>
+    <h1 id="gameLogo"><span>WILD</span><span>COUNTRY</span></h1>
+    <p class="tagline">A WILDERNESS ADVENTURE</p>
+    <section id="customizationMenu" aria-label="Expedition customization">
+      <p class="menu-section-title">Choose your expedition setup</p>
+      <div class="choice-row"><span>Rider</span>
+        <button type="button" data-choice="character" data-value="ranger">Ranger</button>
+        <button type="button" data-choice="character" data-value="rancher">Ranch hand</button>
+        <button type="button" data-choice="character" data-value="guide">Trail guide</button>
+      </div>
+      <div class="choice-row"><span>Horse coat</span>
+        <button type="button" data-choice="horseCoat" data-value="bay">Bay</button>
+        <button type="button" data-choice="horseCoat" data-value="black">Dark bay</button>
+        <button type="button" data-choice="horseCoat" data-value="palomino">Palomino</button>
+      </div>
+      <div class="choice-row"><span>Saddle</span>
+        <button type="button" data-choice="saddle" data-value="classic">Classic leather</button>
+        <button type="button" data-choice="saddle" data-value="forest">Forest blanket</button>
+        <button type="button" data-choice="saddle" data-value="canyon">Canyon blanket</button>
+      </div>
+      <div class="choice-row"><span>Cabin finish</span>
+        <button type="button" data-choice="cabin" data-value="pine">Pine lodge</button>
+        <button type="button" data-choice="cabin" data-value="cedar">Weathered cedar</button>
+        <button type="button" data-choice="cabin" data-value="timber">Dark timber</button>
+      </div>
+    </section>
+    <button id="startButton">Enter the World</button>
+    <div id="pauseActions" hidden>
+      <button id="saveMenuButton" type="button">Save expedition</button>
+      <button id="loadMenuButton" type="button">Load expedition</button>
+    </div>
+    <p id="menuHint" class="hint">WASD to travel · Arrow keys to look · Press Enter to continue</p>
+  </div>
+  <div id="crosshair"><span></span><span></span><span></span><span></span></div>
+  <div id="scopeOverlay" aria-hidden="true">
+    <div id="scopeVignette"></div>
+    <div id="scopeReticle">
+      <span class="reticle-line reticle-top"></span>
+      <span class="reticle-line reticle-right"></span>
+      <span class="reticle-line reticle-bottom"></span>
+      <span class="reticle-line reticle-left"></span>
+      <span class="reticle-dot"></span>
+    </div>
+    <div id="scopeMagnification">4×</div>
+  </div>
+  <div id="hud">
+    <div id="status"></div>
+    <div id="fieldNotes" aria-live="polite"></div>
+    <div id="ammo">AMMO <b>5 / 15</b></div>
+    <div id="controls">
+      WASD Move · Shift Sprint · Space Jump<br />
+      Mouse Drag / Trackpad Scroll Look · Arrow Keys Turn/Look · Left Click Shoot · R Light fire / Reload · E Cabin, kennel, gate, fire, locker, safe, bunk, cooktop, mount, ammo box, call dog · W Fridge nearby · B Binoculars · M Map<br />
+      Near a bull, press E to ride · Counter its bucks with the opposite Arrow key · E to dismount<br />
+      Double Right-Click Scope · Q Call horse / Magnify scope · H Harvest nearby wildlife · 1 Hide controls · F5 Save · F9 Load · Esc Pause
+    </div>
+    <div id="wallet">Cash $0 · Trophies 0</div>
+  </div>
+  <div id="mapOverlay" aria-hidden="true">
+    <section class="map-card" aria-label="Wilderness map">
+      <header><h2>Wilderness map</h2><button id="closeMap" type="button" aria-label="Close map">×</button></header>
+      <canvas id="mapCanvas" width="360" height="280" aria-label="Map showing your position, horse, and observed wildlife"></canvas>
+      <p>● You &nbsp; ◆ Horse &nbsp; ○ Wildlife<br />Valley · Mountain passes · Pine forest · Outer woodland</p>
+    </section>
+  </div>
+  <div id="harvestOverlay" aria-hidden="true">
+    <section class="harvest-card" role="dialog" aria-modal="true" aria-labelledby="harvestTitle">
+      <h2 id="harvestTitle">Wildlife Harvest</h2>
+      <p id="harvestDetails"></p>
+      <button id="sellAnimal" type="button">Harvest and sell</button>
+      <button id="mountAnimal" type="button">Mount trophy at the cabin</button>
+      <button id="storeMeat" type="button" hidden>Harvest meat into cabin fridge</button>
+      <button id="closeHarvest" type="button">Leave it for now</button>
+    </section>
+  </div>
+  <div id="kitchenOverlay" aria-hidden="true">
+    <section class="harvest-card" role="dialog" aria-modal="true" aria-labelledby="kitchenTitle">
+      <h2 id="kitchenTitle">Cabin refrigerator</h2>
+      <p id="kitchenInventory"></p>
+      <p>Use the cooktop or fireplace to prepare food. Press E nearby to cook or eat.</p>
+      <button id="closeKitchen" type="button">Close fridge</button>
+    </section>
+  </div>
+  <div id="gunStorageOverlay" class="cabinOverlay" aria-hidden="true">
+    <section class="harvest-card" role="dialog" aria-modal="true" aria-labelledby="gunStorageTitle">
+      <h2 id="gunStorageTitle">Cabin gun locker</h2>
+      <p id="gunStorageDetails"></p>
+      <button id="toggleStoredRifle" type="button"></button>
+      <button id="closeGunStorage" type="button">Close locker</button>
+    </section>
+  </div>
+  <div id="safeOverlay" class="cabinOverlay" aria-hidden="true">
+    <section class="harvest-card" role="dialog" aria-modal="true" aria-labelledby="safeTitle">
+      <h2 id="safeTitle">Cabin safe</h2>
+      <p id="safeDetails"></p>
+      <button id="closeSafe" type="button">Close safe</button>
+    </section>
+  </div>
+  <div id="kennelOverlay" class="cabinOverlay" aria-hidden="true">
+    <section class="harvest-card kennel-card" role="dialog" aria-modal="true" aria-labelledby="kennelTitle">
+      <h2 id="kennelTitle">Ranch kennel</h2>
+      <p id="kennelSelection"></p>
+      <p class="kennel-note">Choose your companion here. Press E away from other interactions to call your selected dog to follow.</p>
+      <p class="kennel-note">Some breed choices use the closest available Poly Pizza dog model.</p>
+      <p class="kennel-note">Press E or Escape to close.</p>
+      <div class="kennel-breeds">
+        <button type="button" data-dog-breed="none">No dog</button>
+        <button type="button" data-dog-breed="retriever">Labrador retriever</button>
+        <button type="button" data-dog-breed="shepherd">German shepherd</button>
+        <button type="button" data-dog-breed="collie">Australian shepherd</button>
+        <button type="button" data-dog-breed="hound">Bloodhound</button>
+      </div>
+      <button id="closeKennel" type="button">Close kennel</button>
+    </section>
+  </div>
+  <div id="awakeningNote" role="status" aria-live="polite">You have awoken</div>
+  <div id="message"></div>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.178.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.178.0/examples/jsm/"
+      }
+    }
+  </script>
+  <script type="module" src="game.js?v=20261102-one-shot-hunt-v1"></script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+* { box-sizing: border-box; }
+html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #87a9c8; font-family: system-ui, sans-serif; }
+#game { position: fixed; inset: 0; z-index: 0; }
+#game canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+#cabinTransition { position: fixed; inset: 0; z-index: 18; background: #080b08; opacity: 0; pointer-events: none; transition: opacity .16s ease; }
+#cabinTransition.active { opacity: 1; }
+#overlay { position: fixed; inset: 0; z-index: 20; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; overflow-y: auto; padding: 22px; color: white; text-align: center; background: radial-gradient(ellipse at 50% 43%, rgba(12,21,17,.14), rgba(5,9,6,.78)), linear-gradient(180deg, rgba(7,12,10,.06), rgba(5,9,6,.52)); }
+#overlay.hidden { display: none; }
+#overlay:not(.hidden) ~ #crosshair, #overlay:not(.hidden) ~ #scopeOverlay, #overlay:not(.hidden) ~ #hud { display: none; }
+#overlay:not(.hidden) ~ #message { opacity: 0 !important; }
+.brand-emblem { width: min(250px, 40vw); margin: 0 0 -18px; filter: drop-shadow(0 5px 8px rgba(0,0,0,.8)); }
+.brand-emblem svg { display: block; width: 100%; overflow: visible; }
+.emblem-ring, .emblem-antler, .emblem-deer, .emblem-compass { fill: none; stroke: url(#brand-metal); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.emblem-ring { stroke-width: 2; opacity: .78; }
+.emblem-antler { stroke-width: 5; }
+.emblem-deer { stroke-width: 5; }
+.emblem-compass { stroke-width: 2; }
+.emblem-center { fill: rgba(7,14,10,.7); stroke: url(#brand-metal); stroke-width: 2; }
+#overlay h1 { display: flex; flex-direction: column; margin: 0; color: #ead9b2; font-family: Georgia, "Times New Roman", serif; font-size: clamp(42px, 8.6vw, 94px); font-weight: 900; letter-spacing: .14em; line-height: .78; -webkit-text-stroke: 1px rgba(22,16,10,.9); background: linear-gradient(180deg, #fff1d2 4%, #c3a16a 47%, #f0dfb8 72%, #8c6841); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 3px 0 #18140f) drop-shadow(0 7px 10px rgba(0,0,0,.9)); }
+#overlay h1 span + span { margin-top: .13em; font-size: .79em; letter-spacing: .26em; }
+#overlay .tagline { margin: 18px 0 21px; color: #ead9b2; font-size: 11px; font-weight: 650; letter-spacing: .3em; text-shadow: 0 2px 6px #000; }
+#overlay > p:not(.tagline):not(.hint) { margin: 0 0 22px; text-shadow: 0 2px 6px #000; }
+#overlay .hint { margin: 12px 0 0; font-size: 13px; opacity: .82; }
+#customizationMenu { width: min(94vw, 680px); margin: 4px 0; padding: 12px 14px; border: 1px solid rgba(230,210,164,.45); border-radius: 5px; background: rgba(8,15,11,.78); box-shadow: 0 8px 26px rgba(0,0,0,.35); }
+.menu-section-title { margin: 0 0 8px; color: #ead9b2; font-size: 12px; font-weight: 750; letter-spacing: .16em; text-transform: uppercase; }
+.choice-row { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.choice-row > span { min-width: 90px; color: rgba(255,255,255,.82); font-size: 12px; text-align: right; }
+.choice-row button, #pauseActions button, .kennel-breeds button { min-height: 32px; border: 1px solid rgba(230,210,164,.35); border-radius: 3px; padding: 6px 10px; background: rgba(24,38,28,.92); color: #f3e7c9; font: inherit; font-size: 12px; cursor: pointer; }
+.choice-row button:hover, #pauseActions button:hover, .kennel-breeds button:hover { background: rgba(73,91,57,.98); }
+.choice-row button.selected, .kennel-breeds button.selected { border-color: #ead9b2; background: rgba(105,83,47,.95); box-shadow: inset 0 0 0 1px rgba(230,210,164,.28); }
+#pauseActions { display: flex; gap: 10px; }
+#pauseActions[hidden] { display: none; }
+#startButton { border: 1px solid rgba(230,210,164,.85); border-radius: 3px; padding: 13px 28px; background: linear-gradient(180deg, rgba(44,59,39,.96), rgba(17,31,22,.96)); color: #f3e7c9; font-size: 16px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; box-shadow: 0 4px 18px rgba(0,0,0,.5), inset 0 1px rgba(255,255,255,.15); }
+#startButton:hover, #closeMap:hover { background: linear-gradient(180deg, rgba(73,91,57,.98), rgba(34,52,33,.98)); }
+@media (max-height: 620px) {
+  #overlay { justify-content: flex-start; }
+  .brand-emblem { width: min(130px, 22vw); margin-bottom: -12px; }
+  #overlay h1 { font-size: clamp(34px, 6vw, 58px); }
+  #overlay .tagline { margin: 7px 0; }
+  #customizationMenu { padding: 7px 10px; }
+  .choice-row { margin: 3px 0; }
+}
+#crosshair { position: fixed; z-index: 10; left: 50%; top: 50%; width: 22px; height: 22px; transform: translate(-50%, -50%); pointer-events: none; transition: transform .12s; }
+#crosshair span { position: absolute; background: #ff1717; box-shadow: 0 0 2px #fff, 0 0 5px #000, 0 0 8px rgba(255,0,0,.8); }
+#crosshair span:nth-child(1) { left: 10px; top: 0; width: 2px; height: 7px; }
+#crosshair span:nth-child(2) { left: 10px; bottom: 0; width: 2px; height: 7px; }
+#crosshair span:nth-child(3) { top: 10px; left: 0; width: 7px; height: 2px; }
+#crosshair span:nth-child(4) { top: 10px; right: 0; width: 7px; height: 2px; }
+#crosshair.aiming { transform: translate(-50%, -50%) scale(.55); }
+#scopeOverlay { position: fixed; inset: 0; z-index: 9; pointer-events: none; opacity: 0; visibility: hidden; transition: opacity .18s ease, visibility .18s ease; }
+#scopeOverlay.active { opacity: 1; visibility: visible; }
+#scopeVignette { position: absolute; left: 50%; top: 50%; width: min(82vh, 82vw); height: min(82vh, 82vw); transform: translate(-50%, -50%); border-radius: 50%; border: 2px solid rgba(18,18,18,.95); box-shadow: 0 0 0 50vw rgba(0,0,0,.96), inset 0 0 28px 8px rgba(0,0,0,.92); }
+#scopeReticle { position: absolute; left: 50%; top: 50%; width: min(82vh, 82vw); height: min(82vh, 82vw); transform: translate(-50%, -50%); border-radius: 50%; }
+.reticle-line, .reticle-dot { position: absolute; background: #ff1717; box-shadow: 0 0 2px #fff, 0 0 5px #000, 0 0 8px rgba(255,0,0,.8); }
+.reticle-top, .reticle-bottom { left: 50%; width: 1px; height: 12%; transform: translateX(-50%); }
+.reticle-top { top: 7%; } .reticle-bottom { bottom: 7%; }
+.reticle-left, .reticle-right { top: 50%; height: 1px; width: 12%; transform: translateY(-50%); }
+.reticle-left { left: 7%; } .reticle-right { right: 7%; }
+.reticle-dot { left: 50%; top: 50%; width: 3px; height: 3px; border-radius: 50%; transform: translate(-50%, -50%); }
+#scopeMagnification { position: absolute; right: calc(50% - min(41vh, 41vw) + 18px); bottom: calc(50% - min(41vh, 41vw) + 28px); min-width: 54px; padding: 5px 8px; border-radius: 3px; color: rgba(255,255,255,.95); background: rgba(0,0,0,.7); text-align: center; font-size: 18px; font-weight: 700; letter-spacing: .04em; }
+#hud { position: fixed; z-index: 10; left: 18px; right: 18px; bottom: 16px; color: white; pointer-events: none; text-shadow: 0 2px 3px #000; }
+#ammo { position: absolute; right: 0; bottom: 0; font-size: 14px; padding: 8px 12px; background: rgba(0,0,0,.45); border-radius: 4px; }
+#ammo b { font-size: 22px; margin-left: 8px; }
+#wallet { position: absolute; right: 0; bottom: 56px; padding: 7px 10px; border-radius: 4px; background: rgba(0,0,0,.45); font-size: 13px; }
+#controls { position: absolute; left: 0; bottom: 0; font-size: 12px; line-height: 1.6; background: rgba(0,0,0,.45); padding: 7px 10px; border-radius: 4px; }
+#controls.controls-hidden { display: none; }
+#status { position: absolute; left: 50%; bottom: 48px; transform: translateX(-50%); font-size: 14px; text-align: center; }
+#fieldNotes { position: absolute; left: 50%; bottom: 84px; transform: translateX(-50%); min-width: 220px; max-width: min(90vw, 460px); padding: 8px 12px; border: 1px solid rgba(255,255,255,.18); border-radius: 4px; background: rgba(0,0,0,.42); text-align: center; font-size: 13px; line-height: 1.5; }
+#fieldNotes:empty { display: none; }
+#message { position: fixed; z-index: 11; left: 50%; top: 18%; transform: translate(-50%, -50%); color: white; font-weight: 700; text-shadow: 0 2px 4px #000; opacity: 0; transition: opacity .25s; pointer-events: none; }
+#awakeningNote { position: fixed; z-index: 12; left: 50%; top: 20%; transform: translate(-50%, -12px); padding: 14px 28px; border: 1px solid rgba(226,201,156,.72); border-radius: 3px; background: rgba(37,27,19,.78); color: #f0dfc1; font-family: Georgia, serif; font-size: clamp(20px, 3vw, 30px); letter-spacing: .04em; text-shadow: 0 2px 5px #000; opacity: 0; visibility: hidden; transition: opacity .45s ease, transform .45s ease, visibility .45s; pointer-events: none; }
+#awakeningNote.visible { opacity: 1; visibility: visible; transform: translate(-50%, 0); }
+#mapOverlay { position: fixed; inset: 0; z-index: 15; display: none; align-items: center; justify-content: center; background: rgba(5,9,6,.72); color: white; pointer-events: none; }
+#mapOverlay.active { display: flex; }
+.map-card { width: min(92vw, 440px); padding: 14px; border: 1px solid rgba(255,255,255,.35); border-radius: 6px; background: rgba(20,31,24,.96); box-shadow: 0 12px 40px rgba(0,0,0,.45); pointer-events: auto; }
+.map-card header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.map-card h2 { margin: 0; font-size: 17px; letter-spacing: .06em; text-transform: uppercase; }
+.map-card canvas { display: block; width: 100%; height: auto; border: 1px solid rgba(255,255,255,.22); background: #84926b; }
+.map-card p { margin: 8px 0 0; font-size: 12px; opacity: .85; }
+#closeMap { border: 1px solid rgba(255,255,255,.35); border-radius: 4px; padding: 3px 10px; background: rgba(18,52,28,.9); color: white; font-size: 20px; cursor: pointer; }
+#harvestOverlay, #kitchenOverlay, .cabinOverlay { position: fixed; inset: 0; z-index: 18; display: none; align-items: center; justify-content: center; padding: 20px; background: rgba(5,9,6,.78); color: white; }
+#harvestOverlay.active, #kitchenOverlay.active, .cabinOverlay.active { display: flex; }
+.kennel-card .kennel-note { margin: 0 0 14px; font-size: 12px; }
+.kennel-breeds { display: grid; grid-template-columns: repeat(auto-fit,minmax(140px,1fr)); gap: 7px; }
+.kennel-breeds button { min-height: 40px; }
+.harvest-card { width: min(92vw, 430px); padding: 24px; border: 1px solid rgba(255,255,255,.35); border-radius: 7px; background: rgba(20,31,24,.98); box-shadow: 0 12px 40px rgba(0,0,0,.55); text-align: center; }
+.harvest-card h2 { margin: 0 0 10px; letter-spacing: .06em; text-transform: uppercase; }
+.harvest-card p { margin: 0 0 18px; opacity: .85; }
+.harvest-card button { display: block; width: 100%; margin-top: 10px; padding: 12px; border: 1px solid rgba(255,255,255,.35); border-radius: 4px; background: rgba(18,52,28,.9); color: white; font: inherit; cursor: pointer; }
+.harvest-card button[hidden] { display: none; }
+.harvest-card button:hover { background: rgba(43,83,49,.95); }
+.harvest-card #closeHarvest { background: rgba(35,38,34,.9); }
