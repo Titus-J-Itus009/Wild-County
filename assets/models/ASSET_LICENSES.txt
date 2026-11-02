@@ -22,17 +22,18 @@ License URL: https://creativecommons.org/licenses/by/3.0/
 Attribution: "Antlers" by Poly by Google, via Poly Pizza, licensed under CC BY 3.0.
 
 horse.glb
-https://poly.pizza/m/qvTrSG9pZF
-https://static.poly.pizza/d37dbc87-ca61-4b2c-a2da-d2f0c4240bef.glb
+https://poly.pizza/m/b48xU1GsYOT
+https://static.poly.pizza/cdc95b49-d105-4145-9faf-c9a44689f596.glb
 
 CC0 models require no attribution, although crediting Quaternius is appreciated.
 
-rifle.glb
-https://poly.pizza/m/ASOMZIErq3
-https://static.poly.pizza/f03e21b7-e3b7-49fd-b47d-d1908649fcee.glb
+rifle.glb — Quaternius Sniper Rifle (replacement model)
+https://poly.pizza/m/i65hEldsw6
+https://static.poly.pizza/2def4aa0-1f3a-40dd-aa92-0661ce39ae50.glb
+Creator: Quaternius
 License: CC0 1.0 Universal
 License URL: https://creativecommons.org/publicdomain/zero/1.0/
-The model is a detailed Quaternius sniper rifle with barrel, stock, receiver, scope, and glass geometry. It is intentionally rendered only as a local GLB; the game has no primitive rifle fallback.
+The local model is the requested Quaternius sniper rifle. It is normalized into the first-person weapon pose; the game has no primitive rifle fallback.
 
 cow.glb
 https://poly.pizza/m/5XSc2Fka3F

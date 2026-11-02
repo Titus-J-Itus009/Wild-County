@@ -277,8 +277,8 @@ original scale so they can be restored correctly.
 The ground and green landscape materials use a lightweight procedural shader
 for color variation, while grass and the small pond receive subtle animated
 wind and ripple effects.
-The mounted third-person view hides the first-person reticle; the static rider
-mesh is shaped toward a more forward, lower rein-holding arm pose.
+Mounted travel remains first-person; mounted rider meshes are hidden and do
+not change the player camera.
 
 The code remains organized into focused world, model-loading, input, wildlife,
 and HUD sections within the current entry module; larger production work should

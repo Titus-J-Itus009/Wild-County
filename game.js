@@ -87,12 +87,8 @@ const customizationOptions={
   horseCoat:{
     bay:{label:'Bay',tint:0xffffff},
     black:{label:'Dark bay',tint:0x514139},
-    palomino:{label:'Palomino',tint:0xffdfa1}
-  },
-  saddle:{
-    classic:{label:'Classic leather',blanket:0x7b3f31,leather:0x704125},
-    forest:{label:'Forest blanket',blanket:0x3e5942,leather:0x443425},
-    canyon:{label:'Canyon blanket',blanket:0x985434,leather:0x61331f}
+    palomino:{label:'Palomino',tint:0xffdfa1},
+    appaloosa:{label:'Appaloosa',tint:0xf7f5ed,absoluteWhite:true}
   },
   cabin:{
     pine:{label:'Pine lodge',wood:0x765034,siding:0x805a3b,roof:0x55463c},
@@ -107,7 +103,7 @@ const customizationOptions={
     hound:{label:'Bloodhound'}
   }
 };
-const customizationState={character:'ranger',horseCoat:'bay',saddle:'classic',cabin:'pine',dogBreed:'none'};
+const customizationState={character:'ranger',horseCoat:'bay',cabin:'pine',dogBreed:'none'};
 const cabinThemeMaterials={wood:[],siding:[],roof:[]};
 let kennelOpen=false;
 let kennelPosition=null;
@@ -170,8 +166,8 @@ function loadRifle(){
       const maxLength=Math.max(size.x,size.y,size.z);
       if(maxLength<=0)throw new Error('Rifle GLB has zero dimensions');
 
-      // Quaternius's rifle exports with the barrel on the +X axis. Rotate +90 degrees
-      // so that barrel points away from the camera along -Z, then center and scale it.
+      // Normalize the exported Quaternius rifle: rotate +90 degrees around Y because
+      // this asset uses a +X barrel axis, then center it at the camera-weapon origin.
       model.rotation.y=Math.PI/2;
       model.updateMatrixWorld(true);
       model.scale.multiplyScalar(0.98/maxLength);
@@ -315,9 +311,13 @@ function sampleLandscapeHeight(x,z){
 
 function terrainHeight(x,z){
   const sampled=sampleLandscapeHeight(x,z);
-  if(sampled===null)return proceduralTerrainHeight(x,z);
-  const blend=landscapeEdgeBlend(x,z);
-  return THREE.MathUtils.lerp(proceduralTerrainHeight(x,z),sampled,blend);
+  let ground;
+  if(sampled===null)ground=proceduralTerrainHeight(x,z);
+  else{
+    const blend=landscapeEdgeBlend(x,z);
+    ground=THREE.MathUtils.lerp(proceduralTerrainHeight(x,z),sampled,blend);
+  }
+  return ground;
 }
 
 function canTraverseTerrain(fromX,fromZ,toX,toZ,maxGrade=1.05){
@@ -1713,6 +1713,7 @@ transformed.y+=sin(position.x*0.9+position.z*0.7+uWildWaterTime*1.35)*0.004;`);
   finally{activateTreeForest();}
 },undefined,error=>{
   assetError('Low-poly landscape',error);
+  refreshGroundForLandscape();
   activateTreeForest();
 });
 const treeAssets={
@@ -2379,8 +2380,30 @@ function leatherMaterial(color=0x6b3d22,roughness=.62){
 }
 
 function addHorseTack(model){
+  // The requested horse asset includes its own saddle and blanket meshes.
+  // Remove those meshes completely; this game must render the horse bareback.
+  model.traverse(node=>{
+    if(!node.isMesh)return;
+    const name=(node.name||'').toLowerCase();
+    if(name.includes('saddle')||name.includes('blanket')||name.includes('stirrup')){
+      node.visible=false;
+      node.geometry=null;
+      if(node.parent)node.parent.remove(node);
+    }
+  });
+
   const tack=new THREE.Group();
   model.add(tack);
+
+  const embeddedSaddleMeshes=[];
+  const embeddedBlanketMeshes=[];
+  model.traverse(node=>{
+    if(!node.isMesh)return;
+    const name=(node.name||'').toLowerCase();
+    if(name.includes('saddle'))embeddedSaddleMeshes.push(node);
+    if(name.includes('blanket'))embeddedBlanketMeshes.push(node);
+  });
+  const hasEmbeddedSaddle=embeddedSaddleMeshes.length>0||embeddedBlanketMeshes.length>0;
 
   const saddleAnchor=new THREE.Group();
   // Keep the saddle static relative to the normalized model root. This avoids
@@ -2403,50 +2426,40 @@ function addHorseTack(model){
     const bone=model.getObjectByName(name);if(bone){const p=new THREE.Vector3();bone.getWorldPosition(p);spineDebug[name]={world:p.toArray(),local:model.worldToLocal(p.clone()).toArray()};}
   }
   const desiredBackLocal=model.worldToLocal(desiredBackWorld.clone());
-  desiredBackLocal.y+=.18;
+  // The GLB has neither standard bone names nor a reliable spine in this build.
+  // Anchor the tack from the normalized model bounds instead of guessed bone Y.
+  desiredBackLocal.y=bodySize.y*.68;
+  desiredBackLocal.z=-(bodySize.z*.14);
   const backY=desiredBackLocal.y;
-  saddleAnchor.position.set(desiredBackLocal.x,backY,desiredBackLocal.z-.55);
-  saddleAnchor.scale.setScalar(.62);
+  saddleAnchor.position.set(desiredBackLocal.x,backY,desiredBackLocal.z);
+  saddleAnchor.scale.setScalar(.82);
 
   const leather=leatherMaterial(0x704125,.58);
   const darkLeather=leatherMaterial(0x2d1811,.68);
-  const blanket=new THREE.MeshStandardMaterial({color:0x7b3f31,roughness:.82,side:THREE.DoubleSide});
-  const metal=new THREE.MeshStandardMaterial({color:0xb5a071,roughness:.28,metalness:.8});
+  let blanketMesh=null;
 
-  const blanketShape=new THREE.Shape();
-  blanketShape.moveTo(-.58,-.82);blanketShape.quadraticCurveTo(-.68,-.42,-.58,-.02);blanketShape.quadraticCurveTo(-.55,.58,-.42,.72);
-  blanketShape.lineTo(.42,.72);blanketShape.quadraticCurveTo(.55,.58,.58,-.02);blanketShape.quadraticCurveTo(.68,-.42,.58,-.82);blanketShape.closePath();
-  const blanketMesh=new THREE.Mesh(new THREE.ShapeGeometry(blanketShape,12),blanket);
-  blanketMesh.rotation.x=-Math.PI/2;blanketMesh.position.set(0,.05,-.05);saddleAnchor.add(blanketMesh);
-
-  loader.load('./assets/models/saddle.glb',gltf=>{
-    const saddleModel=gltf.scene;
-    saddleModel.scale.setScalar(.4);
-    saddleModel.position.set(0,.025,-.05);
-    saddleModel.traverse(mesh=>{
-      if(mesh.isMesh){
-        mesh.castShadow=true;
-        mesh.receiveShadow=true;
-        const materials=Array.isArray(mesh.material)?mesh.material:[mesh.material];
-        const cloned=materials.map(material=>material.clone());
-        mesh.material=Array.isArray(mesh.material)?cloned:cloned[0];
-        for(const material of cloned){
-          if(material.color)saddleMaterials.push({material,base:material.color.clone()});
-        }
-      }
-    });
-    horse.userData.tack.saddleModel=saddleModel;
-    saddleAnchor.add(saddleModel);
-    applySaddleAppearance();
-  },undefined,error=>assetError('Western saddle',error));
+  for(const mesh of embeddedSaddleMeshes){mesh.visible=false;}
+  for(const mesh of embeddedBlanketMeshes){mesh.visible=false;}
 
   const neck=model.getObjectByName('Neck2')||model.getObjectByName('Neck1')||model.getObjectByName('Torso3');
   const head=model.getObjectByName('Head')||neck;
   const bridle=new THREE.Group();tack.add(bridle);
 
-  const headWorld=new THREE.Vector3(),neckWorld=new THREE.Vector3();head.getWorldPosition(headWorld);neck.getWorldPosition(neckWorld);
-  model.updateMatrixWorld(true);
-  const headLocal=model.worldToLocal(headWorld.clone());const neckLocal=model.worldToLocal(neckWorld.clone());
+  let headLocal=new THREE.Vector3(),neckLocal=new THREE.Vector3();
+  if(head&&neck){
+    const headWorld=new THREE.Vector3(),neckWorld=new THREE.Vector3();
+    head.getWorldPosition(headWorld);neck.getWorldPosition(neckWorld);
+    model.updateMatrixWorld(true);
+    headLocal=model.worldToLocal(headWorld.clone());
+    neckLocal=model.worldToLocal(neckWorld.clone());
+  }else{
+    model.updateMatrixWorld(true);
+    const bounds=new THREE.Box3().setFromObject(model);
+    const size=bounds.getSize(new THREE.Vector3());
+    const center=bounds.getCenter(new THREE.Vector3());
+    neckLocal=model.worldToLocal(new THREE.Vector3(center.x,bounds.min.y+size.y*.62,bounds.min.z+size.z*.72));
+    headLocal=model.worldToLocal(new THREE.Vector3(center.x,bounds.min.y+size.y*.78,bounds.min.z+size.z*.92));
+  }
   const leatherTube=(points,radius=.018,segments=14)=>new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points),segments,radius,7,false),darkLeather);
   bridle.add(leatherTube([neckLocal,headLocal.clone().add(new THREE.Vector3(-.18,.08,-.12)),headLocal.clone().add(new THREE.Vector3(-.18,.02,-.34))],.018));
   bridle.add(leatherTube([neckLocal,headLocal.clone().add(new THREE.Vector3(.18,.08,-.12)),headLocal.clone().add(new THREE.Vector3(.18,.02,-.34))],.018));
@@ -2466,7 +2479,13 @@ function addHorseTack(model){
     ridingReins.push(rein);
   }
   const saddleMaterials=[];
-  model.userData.horseTack={tack,bridle,bones,saddleAnchor,blanketMesh,reinsGroup,leather,darkLeather,saddleMaterials};
+  for(const mesh of [...embeddedSaddleMeshes,...embeddedBlanketMeshes]){
+    const materials=Array.isArray(mesh.material)?mesh.material:[mesh.material];
+    for(const material of materials){
+      if(material.color)saddleMaterials.push({material,base:material.color.clone(),embedded:true});
+    }
+  }
+  model.userData.horseTack={tack,bridle,bones,saddleAnchor,blanketMesh,reinsGroup,leather,darkLeather,saddleMaterials,hasEmbeddedSaddle};
   horse.userData.tack=model.userData.horseTack;
   model.updateMatrixWorld(true);
   const tackBox=new THREE.Box3().setFromObject(tack);
@@ -2474,8 +2493,8 @@ function addHorseTack(model){
   const tackSize=tackBox.getSize(new THREE.Vector3());
   const saddleSize=saddleBox.getSize(new THREE.Vector3());
   const saddleCenter=saddleBox.getCenter(new THREE.Vector3());
-  window.__horseTackDebug={tackSize:tackSize.toArray(),saddleSize:saddleSize.toArray(),saddleCenter:saddleCenter.toArray(),saddlePosition:saddleAnchor.position.toArray(),backY,desiredBackWorld:desiredBackWorld.toArray(),spineDebug,bodyBounds:{min:bodyBounds.min.toArray(),max:bodyBounds.max.toArray(),size:bodySize.toArray()},saddleScale:saddleAnchor.scale.toArray()};
-  console.info('[Wild Country] Western tack attached:',{torso:!!torso,neck:!!neck,head:!!head,saddleScale:.62,tackSize:tackSize.toArray(),saddleSize:saddleSize.toArray()});
+  window.__horseTackDebug={tackSize:tackSize.toArray(),saddleSize:saddleSize.toArray(),saddleCenter:saddleCenter.toArray(),saddlePosition:saddleAnchor.position.toArray(),backY,desiredBackWorld:desiredBackWorld.toArray(),spineDebug,bodyBounds:{min:bodyBounds.min.toArray(),max:bodyBounds.max.toArray(),size:bodySize.toArray()},saddleScale:saddleAnchor.scale.toArray(),embeddedSaddleMeshes:embeddedSaddleMeshes.map(mesh=>({name:mesh.name,visible:mesh.visible,bounds:new THREE.Box3().setFromObject(mesh).getSize(new THREE.Vector3()).toArray()})),embeddedBlanketMeshes:embeddedBlanketMeshes.map(mesh=>({name:mesh.name,visible:mesh.visible,bounds:new THREE.Box3().setFromObject(mesh).getSize(new THREE.Vector3()).toArray()})),hasEmbeddedSaddle};
+  console.info('[Wild Country] Western tack attached:',{torso:!!torso,neck:!!neck,head:!!head,saddleScale:.62,tackSize:tackSize.toArray(),saddleSize:saddleSize.toArray(),hasEmbeddedSaddle});
 }
 
 function deformCowboyToSeat(geometry){
@@ -2803,6 +2822,15 @@ loader.load('./assets/models/elk.glb',gltf=>{
 
 loader.load('./assets/models/horse.glb',gltf=>{
   try{
+    gltf.scene.traverse(node=>{
+      if(!node.isMesh)return;
+      const name=(node.name||'').toLowerCase();
+      if(name.includes('saddle')||name.includes('blanket')||name.includes('stirrup')){
+        node.visible=false;
+        node.geometry=null;
+        if(node.parent)node.parent.remove(node);
+      }
+    });
     // The full model includes the head and ears; its withers should sit around
     // real adult horse height. Tack stays relative to this normalized root.
     animalTemplates.horse=prepareTemplate(gltf,animalModelHeights.horse,'Horse');
@@ -2820,11 +2848,13 @@ loader.load('./assets/models/horse.glb',gltf=>{
     model.traverse(mesh=>{
       if(!mesh.isMesh)return;
       mesh.userData.animal=horse;
+      const name=(mesh.name||'').toLowerCase();
+      const isEmbeddedTack=name.includes('saddle')||name.includes('blanket');
       const sourceMaterials=Array.isArray(mesh.material)?mesh.material:[mesh.material];
       const clonedMaterials=sourceMaterials.map(material=>material.clone());
       mesh.material=Array.isArray(mesh.material)?clonedMaterials:clonedMaterials[0];
       for(const material of clonedMaterials){
-        if(material.color)horse.userData.coatMaterials.push({material,base:material.color.clone()});
+        if(material.color&&!isEmbeddedTack)horse.userData.coatMaterials.push({material,base:material.color.clone()});
       }
     });
     applyHorseAppearance();
@@ -2893,9 +2923,30 @@ function updateCameraRotation() {
 }
 updateCameraRotation();
 
+let mountedCameraYawOffset=0;
+let mountedCameraPitch=.18;
+
+function updateMountedThirdPersonCamera(animal,targetHeight,distance){
+  const target=new THREE.Vector3(animal.position.x,targetHeight,animal.position.z);
+  const cameraYaw=animal.rotation.y+mountedCameraYawOffset;
+  const horizontalDistance=distance*Math.cos(mountedCameraPitch);
+  const desired=new THREE.Vector3(
+    target.x+Math.sin(cameraYaw)*horizontalDistance,
+    target.y+1.55+Math.sin(mountedCameraPitch)*distance,
+    target.z+Math.cos(cameraYaw)*horizontalDistance
+  );
+  camera.position.lerp(desired,player.mountType==='horse'?cameraTransitionTime<.55?.18:1:.28);
+  camera.lookAt(target);
+}
+
 function lookByDelta(dx,dy){
-  if(!isPlaying()||player.mounted)return;
+  if(!isPlaying())return;
   const sensitivity=.0024;
+  if(player.mounted){
+    mountedCameraYawOffset-=dx*sensitivity;
+    mountedCameraPitch=Math.max(-.18,Math.min(.75,mountedCameraPitch-dy*sensitivity));
+    return;
+  }
   yaw-=dx*sensitivity;
   pitch=Math.max(-Math.PI/2+.05,Math.min(Math.PI/2-.05,pitch-dy*sensitivity));
   updateCameraRotation();
@@ -3101,20 +3152,11 @@ function applyHorseAppearance(){
   const choice=customizationOptions.horseCoat[customizationState.horseCoat];
   const tint=new THREE.Color(choice.tint);
   for(const entry of horse.userData.coatMaterials||[]){
-    entry.material.color.copy(entry.base).multiply(tint);
-  }
-}
-
-function applySaddleAppearance(){
-  const choice=customizationOptions.saddle[customizationState.saddle];
-  const tack=horse.userData.tack;
-  if(!tack)return;
-  tack.blanketMesh.material.color.setHex(choice.blanket);
-  tack.leather.color.setHex(choice.leather);
-  tack.darkLeather.color.setHex(choice.leather).multiplyScalar(.48);
-  const leatherTint=new THREE.Color(choice.leather);
-  for(const entry of tack.saddleMaterials||[]){
-    entry.material.color.copy(entry.base).lerp(leatherTint,.38);
+    if(choice.absoluteWhite){
+      entry.material.color.setHex(choice.tint);
+    }else{
+      entry.material.color.copy(entry.base).multiply(tint);
+    }
   }
 }
 
@@ -3158,14 +3200,13 @@ function applyCustomization(key,value){
   customizationState[key]=value;
   if(key==='character')applyCharacterAppearance();
   if(key==='horseCoat')applyHorseAppearance();
-  if(key==='saddle')applySaddleAppearance();
   if(key==='cabin')applyCabinAppearance();
   if(key==='dogBreed')selectDogCompanion(value);
   updateCustomizationMenu();
   persistCustomization();
   if(gameStarted)saveExpedition();
   const settingName=key==='horseCoat'?'Horse coat':key==='dogBreed'?'Kennel breed':
-    key==='saddle'?'Saddle':key==='cabin'?'Cabin finish':'Rider';
+    key==='cabin'?'Cabin finish':'Rider';
   const option=customizationOptions[key][value];
   showMessage(`${settingName}: ${option.label}`);
   updateKennelUI();
@@ -3179,7 +3220,6 @@ function applySavedCustomization(saved){
   }
   applyCharacterAppearance();
   applyHorseAppearance();
-  applySaddleAppearance();
   applyCabinAppearance();
   updateCustomizationMenu();
 }
@@ -3990,9 +4030,67 @@ function loadExpedition(){
   }
 }
 
-// Simple synthesized sound effects
+// Recorded wilderness and movement sounds
 let audioCtx=null;
 function audio(){if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();return audioCtx;}
+const realAudioBuffers=new Map();
+let horseHoofSource=null,horseHoofGain=null;
+let elkBugleTimer=18;
+async function loadRecordedAudio(name,url){
+  try{
+    const response=await fetch(url,{cache:'force-cache'});
+    if(!response.ok)throw new Error(`HTTP ${response.status}`);
+    const data=await response.arrayBuffer();
+    const buffer=await audio().decodeAudioData(data.slice(0));
+    realAudioBuffers.set(name,buffer);
+  }catch(error){console.warn(`[Wild Country] Recorded sound failed: ${name}`,error);}
+}
+function playRecordedAudio(name,volume=.45,playbackRate=1,loop=false){
+  const buffer=realAudioBuffers.get(name);
+  if(!buffer)return null;
+  const context=audio();
+  if(context.state==='suspended')context.resume().catch(()=>{});
+  const source=context.createBufferSource();
+  const gain=context.createGain();
+  source.buffer=buffer;source.loop=loop;source.playbackRate.value=playbackRate;
+  gain.gain.setValueAtTime(volume,context.currentTime);
+  source.connect(gain).connect(context.destination);
+  source.start();
+  return {source,gain};
+}
+function updateHorseHoofLoop(active,speed){
+  if(!active||!realAudioBuffers.has('horse-gallop')){
+    if(horseHoofSource){try{horseHoofSource.stop();}catch{}horseHoofSource=null;horseHoofGain=null;}
+    return;
+  }
+  const absoluteSpeed=Math.abs(speed);
+  const desiredVolume=Math.min(.32,.13+absoluteSpeed/55);
+  const desiredRate=.72+Math.min(1,absoluteSpeed/13)*.33;
+  if(!horseHoofSource){
+    const loop=playRecordedAudio('horse-gallop',desiredVolume,desiredRate,true);
+    if(loop){horseHoofSource=loop.source;horseHoofGain=loop.gain;}
+  }else{
+    const context=audio();
+    horseHoofSource.playbackRate.setTargetAtTime(desiredRate,context.currentTime,.025);
+    horseHoofGain.gain.setTargetAtTime(desiredVolume,context.currentTime,.025);
+  }
+}
+for(const [name,url] of Object.entries({
+  'footsteps-gravel':'./assets/audio/footsteps-gravel.mp3',
+  'horse-gallop':'./assets/audio/horse-gallop.ogg',
+  'elk-bugle':'./assets/audio/elk-bugle.ogg',
+  'deer-call':'./assets/audio/deer-call.ogg'
+}))loadRecordedAudio(name,url);
+
+function updateElkBugling(dt){
+  elkBugleTimer-=dt;
+  if(elkBugleTimer>0)return;
+  elkBugleTimer=18+Math.random()*24;
+  const elk=wildlifeData.find(entry=>entry.species==='elk'&&!entry.dead&&!entry.harvested&&entry.group.visible&&entry.group.position.distanceTo(player.position)<125);
+  if(elk)playRecordedAudio('elk-bugle',.4,.82);
+}
+
+// Simple synthesized interface effects remain as fallbacks
 function playHorseWhistleSound(){
   const context=audio();
   if(context.state==='suspended')context.resume().catch(error=>{
@@ -4015,6 +4113,8 @@ function playHorseWhistleSound(){
   }
 }
 function playAnimalDeathCall(species){
+  if(species==='elk'||species==='stag'){if(playRecordedAudio('elk-bugle',.48, species==='stag'?1.12:.9))return;}
+  if(species==='deer'){if(playRecordedAudio('deer-call',.42,.92))return;}
   const context=audio();
   if(context.state==='suspended')context.resume().catch(error=>{
     console.warn('[Wild Country] Animal call audio could not resume:',error);
@@ -4056,7 +4156,10 @@ function playAnimalDeathCall(species){
 }
 function tone(freq,duration,volume=.08,type='sine') {const c=audio();const o=c.createOscillator(),g=c.createGain();o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(volume,c.currentTime);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+duration);o.connect(g).connect(c.destination);o.start();o.stop(c.currentTime+duration);}
 let footstepTimer=0;
-function footstep(){if(footstepTimer<=0){tone(72,.09,.025,'triangle');footstepTimer=.42;}}
+function footstep(sprinting=false){if(footstepTimer<=0){
+  if(!playRecordedAudio('footsteps-gravel',sprinting?.16:.12,sprinting?1.18:.92))tone(72,.09,.025,'triangle');
+  footstepTimer=sprinting?.28:.43;
+}}
 function gunshot(){const c=audio(),n=c.createBufferSource(),buffer=c.createBuffer(1,c.sampleRate*.18,c.sampleRate);const data=buffer.getChannelData(0);for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*Math.pow(1-i/data.length,2);n.buffer=buffer;const g=c.createGain();g.gain.value=.45;n.connect(g).connect(c.destination);n.start();tone(55,.12,.12,'square');}
 function reload(){
   if(!rifleCarried){showMessage('Your rifle is stored in the cabin locker');return;}
@@ -4244,7 +4347,7 @@ function movePlayer(dt){
   }
   player.position.x=nx;
   player.position.z=nz;
-  if(move.lengthSq()>0 && player.onGround) footstep();
+  if(move.lengthSq()>0 && player.onGround) footstep(sprint);
   const groundY=(cabinState.inside?cabinState.floorY:terrainHeight(player.position.x,player.position.z))+PLAYER_EYE_HEIGHT;
   if(player.onGround&&keys.Space){player.verticalVelocity=7.2;player.onGround=false;}
   if(!player.onGround){
@@ -4285,7 +4388,7 @@ function toggleMount(){
     return;
   }
   if(!horse.userData.loaded){showMessage('Horse model is still loading');return;}
-  if(horse.position.distanceTo(player.position)<4){player.mounted=true;player.mountType='horse';cameraTransitionTime=0;camera.userData.ridingLookTarget=null;rider.visible=riderReady;if(horse.userData.tack?.reinsGroup)horse.userData.tack.reinsGroup.visible=true;yaw=horse.rotation.y;pitch=0.05;updateCameraRotation();showMessage('Mounted — hold Shift to gallop');}
+  if(horse.position.distanceTo(player.position)<4){player.mounted=true;player.mountType='horse';cameraTransitionTime=0;rider.visible=riderReady;if(horse.userData.tack?.reinsGroup)horse.userData.tack.reinsGroup.visible=true;mountedCameraYawOffset=0;mountedCameraPitch=.18;yaw=horse.rotation.y;pitch=0.05;updateCameraRotation();showMessage('Mounted — hold Shift to gallop');}
   else showMessage('Move closer to the horse');
 }
 
@@ -4306,7 +4409,8 @@ function tryMountBull(){
   rider.rotation.set(0,Math.PI,0);
   rider.visible=riderReady;
   cameraTransitionTime=0;
-  camera.userData.ridingLookTarget=null;
+  mountedCameraYawOffset=0;
+  mountedCameraPitch=.18;
   yaw=bull.group.rotation.y;
   pitch=.04;
   updateCameraRotation();
@@ -4371,6 +4475,8 @@ function updateBullRide(dt){
   if(!entry||!ride)return;
   const animal=entry.group;
   const now=clock.elapsedTime;
+  if(keys.ArrowUp)mountedCameraPitch=Math.min(.75,mountedCameraPitch+dt*.55);
+  if(keys.ArrowDown)mountedCameraPitch=Math.max(-.18,mountedCameraPitch-dt*.55);
   ride.elapsed+=dt;
   ride.timer-=dt;
   if(!ride.requiredSide&&ride.timer<=0){
@@ -4402,14 +4508,8 @@ function updateBullRide(dt){
   rider.position.y=.72+(ride.requiredSide?Math.abs(Math.sin(now*18))*.12:Math.sin(now*3)*.025);
   yaw=ride.baseYaw;
   player.position.set(animal.position.x,animal.position.y+PLAYER_EYE_HEIGHT,animal.position.z);
-  const behind=new THREE.Vector3(Math.sin(yaw)*6,3,Math.cos(yaw)*6);
-  const desiredCamera=animal.position.clone().add(behind);
-  const target=animal.position.clone().add(new THREE.Vector3(-Math.sin(yaw)*3,1.4,-Math.cos(yaw)*3));
-  camera.position.lerp(desiredCamera,1-Math.exp(-dt*7));
-  camera.userData.ridingLookTarget??=target.clone();
-  camera.userData.ridingLookTarget.lerp(target,1-Math.exp(-dt*8));
-  camera.lookAt(camera.userData.ridingLookTarget);
-  camera.rotation.order='YXZ';
+  rider.visible=riderReady;
+  updateMountedThirdPersonCamera(animal,animal.position.y+1.65,5.0);
   statusEl.textContent=`Bull ride · ${ride.successfulBraces} buck${ride.successfulBraces===1?'':'s'} survived`;
 }
 
@@ -4459,15 +4559,15 @@ function updateHorse(dt){
     return;
   }
   const forward=(keys.KeyW?1:0)-(keys.KeyS?1:0),turn=(keys.KeyA?1:0)-(keys.KeyD?1:0)+(keys.ArrowLeft?1:0)-(keys.ArrowRight?1:0);
-  if(keys.ArrowUp)pitch+=dt*.55;
-  if(keys.ArrowDown)pitch-=dt*.55;
-  pitch=Math.max(-Math.PI/2+.05,Math.min(Math.PI/2-.05,pitch));
+  if(keys.ArrowUp)mountedCameraPitch=Math.min(.75,mountedCameraPitch+dt*.55);
+  if(keys.ArrowDown)mountedCameraPitch=Math.max(-.18,mountedCameraPitch-dt*.55);
   const gallop=(keys.ShiftLeft||keys.ShiftRight)&&forward>0;
   const targetSpeed=forward*(gallop?13:6);
   horse.userData.speed=THREE.MathUtils.damp(horse.userData.speed||0,targetSpeed,targetSpeed===0?3.2:2.1,dt);
   const speed=horse.userData.speed;
   horse.rotation.y+=turn*dt*(gallop?1.45:1.05)*Math.max(.3,Math.abs(speed)/6);
   yaw=horse.rotation.y;
+  let horseActuallyMoved=false;
   if(Math.abs(speed)>.01){
     const startX=horse.position.x,startZ=horse.position.z;
     const nextX=startX-Math.sin(horse.rotation.y)*speed*dt;
@@ -4475,6 +4575,7 @@ function updateHorse(dt){
     const moved=findHorseMove(startX,startZ,nextX,nextZ);
     horse.position.x=moved.x;
     horse.position.z=moved.z;
+    horseActuallyMoved=moved.moved;
     if(!moved.moved)horse.userData.speed=0;
   }
   horse.position.y=THREE.MathUtils.damp(
@@ -4487,16 +4588,9 @@ function updateHorse(dt){
   if(horse.userData.mixer)horse.userData.mixer.update(dt);
   player.position.set(horse.position.x,horse.position.y+PLAYER_EYE_HEIGHT,horse.position.z);
   updateRiderMotion(dt,turn,speed);
-  const behind=new THREE.Vector3(Math.sin(yaw)*7.5,4,Math.cos(yaw)*7.5);
-  const desiredCamera=horse.position.clone().add(behind);
-  const viewForward=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw));
-  const target=horse.position.clone().addScaledVector(viewForward,8);
-  target.y+=2.1-Math.sin(pitch)*5;
-  camera.position.lerp(desiredCamera,1-Math.exp(-dt*(cameraTransitionTime<.55?3.5:9)));
-  camera.userData.ridingLookTarget??=target.clone();
-  camera.userData.ridingLookTarget.lerp(target,1-Math.exp(-dt*7));
-  camera.lookAt(camera.userData.ridingLookTarget);
-  camera.rotation.order='YXZ';
+  rider.visible=riderReady;
+  updateHorseHoofLoop(horseActuallyMoved && Math.abs(speed)>0.25,speed);
+  updateMountedThirdPersonCamera(horse,horse.position.y+2.05,7.0);
   cameraTransitionTime+=dt;
   statusEl.textContent=Math.abs(speed)>8?'Galloping':Math.abs(speed)>.25?'Riding':'Stopped';
 }
@@ -4763,7 +4857,7 @@ function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDel
   updateTreeLods(dt);
   updateCabinDoor(dt);
   if(isPlaying()){
-    if(!cabinState.inside){updateWildlife(dt);updateDayNight(dt);}
+    if(!cabinState.inside){updateWildlife(dt);updateElkBugling(dt);updateDayNight(dt);}
     updateKeyboardLook(dt);
     if(!player.mounted){
       movePlayer(dt);
@@ -4779,7 +4873,8 @@ function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDel
         updateCameraRotation();
       }
     }
-    else updateHorse(dt);
+    else {updateHorse(dt);}
+    if(!player.mounted||player.mountType!=='horse')updateHorseHoofLoop(false,0);
     updateDogCompanion(dt);
     fieldNotesTimer-=dt;
     if(fieldNotesTimer<=0){updateFieldNotes();fieldNotesTimer=.25;}
