@@ -22,8 +22,8 @@ License URL: https://creativecommons.org/licenses/by/3.0/
 Attribution: "Antlers" by Poly by Google, via Poly Pizza, licensed under CC BY 3.0.
 
 horse.glb
-https://poly.pizza/m/b48xU1GsYOT
-https://static.poly.pizza/cdc95b49-d105-4145-9faf-c9a44689f596.glb
+https://poly.pizza/m/qvTrSG9pZF
+https://static.poly.pizza/d37dbc87-ca61-4b2c-a2da-d2f0c4240bef.glb
 
 CC0 models require no attribution, although crediting Quaternius is appreciated.
 

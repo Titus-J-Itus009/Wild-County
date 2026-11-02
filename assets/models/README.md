@@ -6,7 +6,7 @@ All animal and equipment models are downloaded locally from Poly Pizza.
 - `stag.glb` — Quaternius Stag, animated
 - `antlers.glb` — Poly by Google Antlers, used for the 3x3 deer rack
 - `elk.glb` — Poly by Google Elk, static model without embedded animation
-- `horse.glb` — Poly Pizza horse model requested for Wild Country
+- `horse.glb` — Quaternius Horse, animated (restored previous model)
 - `cow.glb` — Quaternius Cow, animated
 - `bull.glb` — Quaternius Bull, animated
 - `dog-generic.glb` — Poly by Google Dog, used for the Labrador retriever and Australian shepherd kennel choices
@@ -32,8 +32,9 @@ are recorded in `ASSET_LICENSES.txt`.
 
 The elk asset has no animation clips. Its death response is a simple procedural
 fall, not an embedded or skeletal animation. Stags use their source model's
-`Death` clip. The horse model is the Poly Pizza asset identified above. Other models are recognizable low-poly game assets, not photorealistic scans. Keep the GLBs beside this README; update the paths in
-`game.js` if any file is renamed.
+`Death` clip. The models are recognizable low-poly game assets, not
+photorealistic scans. The previous Quaternius horse model has been restored.
+Keep the GLBs beside this README; update the paths in `game.js` if any file is renamed.
 
 The kennel companion is a locally loaded Poly Pizza GLB. The companion follows
 the player after being called with E, stays terrain-grounded outdoors, and
