@@ -2724,6 +2724,80 @@ loader.load('./assets/models/elk.glb',gltf=>{
   }catch(error){assetError('Elk',error);}
 },undefined,error=>assetError('Elk',error));
 
+function addHorseDetails(model){
+  horse.userData.horseDetail={spots:[],mane:[],tail:[],eyebrows:[],hooves:[]};
+  const detail=horse.userData.horseDetail;
+  const box=new THREE.Box3().setFromObject(model);
+  const size=box.getSize(new THREE.Vector3());
+  const center=box.getCenter(new THREE.Vector3());
+
+  const maneMaterial=new THREE.MeshStandardMaterial({color:0x24130b,roughness:.82,metalness:0});
+  const neck=model.getObjectByName('Neck3')||model.getObjectByName('Neck2')||model;
+  for(let i=0;i<14;i++){
+    const t=i/13;
+    const points=[
+      new THREE.Vector3(-.025,size.y*.68+size.y*.12*t,-size.z*.08+size.z*.04*t),
+      new THREE.Vector3(-.035-.025*Math.sin(t*Math.PI),size.y*.58+size.y*.06*t,-size.z*.12+size.z*.10*t),
+      new THREE.Vector3(-.06,.78+.05*(1-t),-size.z*.18+size.z*.15*t)
+    ];
+    const strand=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points),8,.012,.5,false),maneMaterial);
+    neck.add(strand);
+    detail.mane.push(strand);
+  }
+
+  const tailRoot=model.getObjectByName('Tail1')||model.getObjectByName('Tail2')||model;
+  const tailMaterial=new THREE.MeshStandardMaterial({color:0x24130b,roughness:.88});
+  for(let i=0;i<18;i++){
+    const spread=(i-8.5)*.018;
+    const points=[
+      new THREE.Vector3(spread,-.02,-.02),
+      new THREE.Vector3(spread*1.2,-.32,-.04),
+      new THREE.Vector3(spread*1.8,-.82-.05*Math.abs(spread),-.08),
+      new THREE.Vector3(spread*2.2,-1.15-.04*Math.abs(spread),-.12)
+    ];
+    const strand=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points),12,.014,.5,false),tailMaterial);
+    tailRoot.add(strand);
+    detail.tail.push(strand);
+  }
+
+  const spotMaterial=new THREE.MeshStandardMaterial({color:0x4a2a1b,roughness:.74,metalness:0});
+  const spotLocations=[[-.31,1.72,.48,.13,.09],[-.34,1.54,.76,.18,.12],[.33,1.68,.55,.14,.11],[.34,1.48,.92,.17,.10],[-.32,1.62,-.02,.15,.10],[.32,1.72,-.38,.12,.09],[-.30,1.48,-.72,.16,.11],[.31,1.56,-.55,.18,.12]];
+  for(const [x,y,z,sx,sy] of spotLocations){
+    const spot=new THREE.Mesh(new THREE.SphereGeometry(1,12,8),spotMaterial.clone());
+    spot.scale.set(sx,sy,.018);
+    spot.position.set(x,y,z);
+    model.add(spot);
+    spot.visible=false;
+    detail.spots.push(spot);
+  }
+
+  const eyeMaterial=new THREE.MeshPhysicalMaterial({color:0x080604,roughness:.12,metalness:.05,clearcoat:1,clearcoatRoughness:.08});
+  const eyeWhite=new THREE.MeshStandardMaterial({color:0xbeb4a1,roughness:.55});
+  const head=model.getObjectByName('Head');
+  if(head){
+    for(const side of [-1,1]){
+      const white=new THREE.Mesh(new THREE.SphereGeometry(.055,12,8),eyeWhite);
+      white.scale.set(1,.72,1);
+      white.position.set(side*.13,.16,-.08);
+      head.add(white);
+      const eye=new THREE.Mesh(new THREE.SphereGeometry(.038,12,8),eyeMaterial);
+      eye.position.set(side*.13,.16,-.125);
+      head.add(eye);
+    }
+  }
+
+  const hoofMaterial=new THREE.MeshStandardMaterial({color:0x17130f,roughness:.48,metalness:.02});
+  for(const boneName of ['FrontLowerLegL','FrontLowerLegR','BackLowerLegL','BackLowerLegR']){
+    const bone=model.getObjectByName(boneName);
+    if(!bone)continue;
+    const hoof=new THREE.Mesh(new THREE.SphereGeometry(.09,10,6),hoofMaterial);
+    hoof.scale.set(1.05,.42,1.25);
+    hoof.position.set(0,-.08,0);
+    bone.add(hoof);
+    detail.hooves.push(hoof);
+  }
+}
+
 loader.load('./assets/models/horse.glb',gltf=>{
   try{
     if(!gltf?.scene)throw new Error('Horse model returned no scene');
@@ -2758,6 +2832,7 @@ loader.load('./assets/models/horse.glb',gltf=>{
         if(material.color&&!isEmbeddedTack)horse.userData.coatMaterials.push({material,base:material.color.clone()});
       }
     });
+    addHorseDetails(model);
     applyHorseAppearance();
     const horseBox=new THREE.Box3().setFromObject(model);
     const horseBones=[];
@@ -3052,12 +3127,36 @@ function applyCharacterAppearance(){
 function applyHorseAppearance(){
   const choice=customizationOptions.horseCoat[customizationState.horseCoat];
   const tint=new THREE.Color(choice.tint);
+  const detail=horse.userData.horseDetail;
   for(const entry of horse.userData.coatMaterials||[]){
     if(choice.absoluteWhite){
       entry.material.color.setHex(choice.tint);
     }else{
       entry.material.color.copy(entry.base).multiply(tint);
     }
+    entry.material.roughness=.68;
+    entry.material.metalness=0;
+    entry.material.envMapIntensity=.38;
+    if('sheen' in entry.material){
+      entry.material.sheen=0.2;
+      entry.material.sheenColor=new THREE.Color(choice.absoluteWhite?0xe7dcc7:choice.tint);
+      entry.material.sheenRoughness=.72;
+    }
+  }
+
+  const maneTailColor=new THREE.Color(
+    customizationState.horseCoat==='palomino'?0xd9b668:
+    customizationState.horseCoat==='appaloosa'?0x24130b:
+    customizationState.horseCoat==='black'?0x17110d:0x3a2416
+  );
+  for(const mesh of detail?.mane||[])mesh.material.color.copy(maneTailColor);
+  for(const mesh of detail?.tail||[])mesh.material.color.copy(maneTailColor);
+  for(const mesh of detail?.spots||[])mesh.visible=customizationState.horseCoat==='appaloosa';
+
+  if(customizationState.horseCoat==='palomino'){
+    for(const mesh of detail?.hooves||[])if(mesh.material?.color)mesh.material.color.setHex(0xd4c4a5);
+  }else{
+    for(const mesh of detail?.hooves||[])if(mesh.material?.color)mesh.material.color.setHex(0x17130f);
   }
 }
 
