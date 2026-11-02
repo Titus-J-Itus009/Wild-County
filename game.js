@@ -2380,121 +2380,19 @@ function leatherMaterial(color=0x6b3d22,roughness=.62){
 }
 
 function addHorseTack(model){
-  // The requested horse asset includes its own saddle and blanket meshes.
-  // Remove those meshes completely; this game must render the horse bareback.
+  if(!model)return;
+  // Keep the requested horse model completely bareback. Do not add procedural
+  // saddles, blankets, stirrups, bridles, or reins.
   model.traverse(node=>{
     if(!node.isMesh)return;
     const name=(node.name||'').toLowerCase();
     if(name.includes('saddle')||name.includes('blanket')||name.includes('stirrup')){
       node.visible=false;
-      node.geometry=null;
-      if(node.parent)node.parent.remove(node);
+      node.removeFromParent();
     }
   });
-
-  const tack=new THREE.Group();
-  model.add(tack);
-
-  const embeddedSaddleMeshes=[];
-  const embeddedBlanketMeshes=[];
-  model.traverse(node=>{
-    if(!node.isMesh)return;
-    const name=(node.name||'').toLowerCase();
-    if(name.includes('saddle'))embeddedSaddleMeshes.push(node);
-    if(name.includes('blanket'))embeddedBlanketMeshes.push(node);
-  });
-  const hasEmbeddedSaddle=embeddedSaddleMeshes.length>0||embeddedBlanketMeshes.length>0;
-
-  const saddleAnchor=new THREE.Group();
-  // Keep the saddle static relative to the normalized model root. This avoids
-  // inheriting the GLB skeleton's animated/bizarre scale transforms and keeps
-  // the saddle on top of the horse rather than in its torso or underground.
-  model.add(saddleAnchor);
-  model.updateMatrixWorld(true);
-  const bodyBounds=new THREE.Box3().setFromObject(model);
-  const bodySize=bodyBounds.getSize(new THREE.Vector3());
-  const torso=model.getObjectByName('Torso2')||model.getObjectByName('Torso3')||model.getObjectByName('Torso');
-  const desiredBackWorld=new THREE.Vector3();
-  if(torso){
-    torso.getWorldPosition(desiredBackWorld);
-  }else{
-    const center=bodyBounds.getCenter(new THREE.Vector3());
-    desiredBackWorld.set(center.x,bodyBounds.max.y-bodySize.y*.24,center.z);
-  }
-  const spineDebug={};
-  for(const name of ['Back','Torso','Torso2','Torso3','Neck1','Neck2','Head']){
-    const bone=model.getObjectByName(name);if(bone){const p=new THREE.Vector3();bone.getWorldPosition(p);spineDebug[name]={world:p.toArray(),local:model.worldToLocal(p.clone()).toArray()};}
-  }
-  const desiredBackLocal=model.worldToLocal(desiredBackWorld.clone());
-  // The GLB has neither standard bone names nor a reliable spine in this build.
-  // Anchor the tack from the normalized model bounds instead of guessed bone Y.
-  desiredBackLocal.y=bodySize.y*.68;
-  desiredBackLocal.z=-(bodySize.z*.14);
-  const backY=desiredBackLocal.y;
-  saddleAnchor.position.set(desiredBackLocal.x,backY,desiredBackLocal.z);
-  saddleAnchor.scale.setScalar(.82);
-
-  const leather=leatherMaterial(0x704125,.58);
-  const darkLeather=leatherMaterial(0x2d1811,.68);
-  let blanketMesh=null;
-
-  for(const mesh of embeddedSaddleMeshes){mesh.visible=false;}
-  for(const mesh of embeddedBlanketMeshes){mesh.visible=false;}
-
-  const neck=model.getObjectByName('Neck2')||model.getObjectByName('Neck1')||model.getObjectByName('Torso3');
-  const head=model.getObjectByName('Head')||neck;
-  const bridle=new THREE.Group();tack.add(bridle);
-
-  let headLocal=new THREE.Vector3(),neckLocal=new THREE.Vector3();
-  if(head&&neck){
-    const headWorld=new THREE.Vector3(),neckWorld=new THREE.Vector3();
-    head.getWorldPosition(headWorld);neck.getWorldPosition(neckWorld);
-    model.updateMatrixWorld(true);
-    headLocal=model.worldToLocal(headWorld.clone());
-    neckLocal=model.worldToLocal(neckWorld.clone());
-  }else{
-    model.updateMatrixWorld(true);
-    const bounds=new THREE.Box3().setFromObject(model);
-    const size=bounds.getSize(new THREE.Vector3());
-    const center=bounds.getCenter(new THREE.Vector3());
-    neckLocal=model.worldToLocal(new THREE.Vector3(center.x,bounds.min.y+size.y*.62,bounds.min.z+size.z*.72));
-    headLocal=model.worldToLocal(new THREE.Vector3(center.x,bounds.min.y+size.y*.78,bounds.min.z+size.z*.92));
-  }
-  const leatherTube=(points,radius=.018,segments=14)=>new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points),segments,radius,7,false),darkLeather);
-  bridle.add(leatherTube([neckLocal,headLocal.clone().add(new THREE.Vector3(-.18,.08,-.12)),headLocal.clone().add(new THREE.Vector3(-.18,.02,-.34))],.018));
-  bridle.add(leatherTube([neckLocal,headLocal.clone().add(new THREE.Vector3(.18,.08,-.12)),headLocal.clone().add(new THREE.Vector3(.18,.02,-.34))],.018));
-  bridle.add(leatherTube([headLocal.clone().add(new THREE.Vector3(-.23,.10,-.05)),headLocal.clone().add(new THREE.Vector3(0,.22,-.12)),headLocal.clone().add(new THREE.Vector3(.23,.10,-.05))],.015));
-  bridle.add(leatherTube([headLocal.clone().add(new THREE.Vector3(-.22,.02,-.30)),headLocal.clone().add(new THREE.Vector3(0,-.08,-.38)),headLocal.clone().add(new THREE.Vector3(.22,.02,-.30))],.018));
-  const bitCurve=new THREE.CatmullRomCurve3([headLocal.clone().add(new THREE.Vector3(-.28,-.08,-.38)),headLocal.clone(),headLocal.clone().add(new THREE.Vector3(.28,-.08,-.38))]);
-  bridle.add(new THREE.Mesh(new THREE.TubeGeometry(bitCurve,16,.012,8,false),metal));
-
-  const bones={torso,neck,head};
-  const reinsGroup=new THREE.Group();
-  horse.add(reinsGroup);
-  reinsGroup.visible=false;
-  for(let i=0;i<2;i++){
-    const rein=new THREE.Mesh(new THREE.BufferGeometry(),darkLeather);
-    rein.frustumCulled=false;
-    reinsGroup.add(rein);
-    ridingReins.push(rein);
-  }
-  const saddleMaterials=[];
-  for(const mesh of [...embeddedSaddleMeshes,...embeddedBlanketMeshes]){
-    const materials=Array.isArray(mesh.material)?mesh.material:[mesh.material];
-    for(const material of materials){
-      if(material.color)saddleMaterials.push({material,base:material.color.clone(),embedded:true});
-    }
-  }
-  model.userData.horseTack={tack,bridle,bones,saddleAnchor,blanketMesh,reinsGroup,leather,darkLeather,saddleMaterials,hasEmbeddedSaddle};
-  horse.userData.tack=model.userData.horseTack;
-  model.updateMatrixWorld(true);
-  const tackBox=new THREE.Box3().setFromObject(tack);
-  const saddleBox=new THREE.Box3().setFromObject(saddleAnchor);
-  const tackSize=tackBox.getSize(new THREE.Vector3());
-  const saddleSize=saddleBox.getSize(new THREE.Vector3());
-  const saddleCenter=saddleBox.getCenter(new THREE.Vector3());
-  window.__horseTackDebug={tackSize:tackSize.toArray(),saddleSize:saddleSize.toArray(),saddleCenter:saddleCenter.toArray(),saddlePosition:saddleAnchor.position.toArray(),backY,desiredBackWorld:desiredBackWorld.toArray(),spineDebug,bodyBounds:{min:bodyBounds.min.toArray(),max:bodyBounds.max.toArray(),size:bodySize.toArray()},saddleScale:saddleAnchor.scale.toArray(),embeddedSaddleMeshes:embeddedSaddleMeshes.map(mesh=>({name:mesh.name,visible:mesh.visible,bounds:new THREE.Box3().setFromObject(mesh).getSize(new THREE.Vector3()).toArray()})),embeddedBlanketMeshes:embeddedBlanketMeshes.map(mesh=>({name:mesh.name,visible:mesh.visible,bounds:new THREE.Box3().setFromObject(mesh).getSize(new THREE.Vector3()).toArray()})),hasEmbeddedSaddle};
-  console.info('[Wild Country] Western tack attached:',{torso:!!torso,neck:!!neck,head:!!head,saddleScale:.62,tackSize:tackSize.toArray(),saddleSize:saddleSize.toArray(),hasEmbeddedSaddle});
+  horse.userData.tack=null;
+  model.userData.horseTack=null;
 }
 
 function deformCowboyToSeat(geometry){
@@ -2582,13 +2480,19 @@ function loadRancherRider(){
 }
 
 function updateRiderSeat(){
-  const tack=horse.userData.tack;
-  if(!tack?.saddleAnchor)return;
   horse.updateMatrixWorld(true);
-  const seatWorld=tack.saddleAnchor.localToWorld(new THREE.Vector3(0,.85,-.05));
-  horse.worldToLocal(seatWorld);
-  rider.position.copy(seatWorld);
-  rider.position.y-=.83;
+  const tack=horse.userData.tack;
+  if(tack?.saddleAnchor){
+    const seatWorld=tack.saddleAnchor.localToWorld(new THREE.Vector3(0,.85,-.05));
+    horse.worldToLocal(seatWorld);
+    rider.position.copy(seatWorld);
+    rider.position.y-=.83;
+    return;
+  }
+  const box=new THREE.Box3().setFromObject(horse);
+  const size=box.getSize(new THREE.Vector3());
+  const center=box.getCenter(new THREE.Vector3());
+  rider.position.set(center.x,box.max.y-.18,center.z-.03);
 }
 
 function updateRiderMotion(dt,turn,speed){
@@ -2822,19 +2726,16 @@ loader.load('./assets/models/elk.glb',gltf=>{
 
 loader.load('./assets/models/horse.glb',gltf=>{
   try{
-    gltf.scene.traverse(node=>{
-      if(!node.isMesh)return;
-      const name=(node.name||'').toLowerCase();
-      if(name.includes('saddle')||name.includes('blanket')||name.includes('stirrup')){
-        node.visible=false;
-        node.geometry=null;
-        if(node.parent)node.parent.remove(node);
-      }
-    });
+    if(!gltf?.scene)throw new Error('Horse model returned no scene');
+    // Tack removal is performed after cloning, so animation/data traversal
+    // cannot be disturbed while the source scene is being prepared.
     // The full model includes the head and ears; its withers should sit around
     // real adult horse height. Tack stays relative to this normalized root.
     animalTemplates.horse=prepareTemplate(gltf,animalModelHeights.horse,'Horse');
-    const model=cloneSkinnedModel(animalTemplates.horse.root);
+    let model;
+    try{model=cloneSkinnedModel(animalTemplates.horse.root);}catch(error){console.warn('[Wild Country] Skeleton clone unavailable; using a scene clone:',error);}
+    if(!model)model=animalTemplates.horse.root.clone(true);
+    if(!model)throw new Error('Horse model could not be cloned');
     horse.scale.set(1,1,1); // One scale source: normalized horse model. Tack stays relative to this root.
     model.rotation.y=Math.PI; // Match the horse model head to the game's local -Z movement direction.
     horse.add(model);
@@ -2874,7 +2775,7 @@ loader.load('./assets/models/horse.glb',gltf=>{
     console.info('[Wild Country] Horse key bone positions:',{torsoWorld:torsoPosition.toArray(),torsoLocal:torsoLocal.toArray(),neckLocal:neckLocal.toArray(),headLocal:headLocal.toArray()});
     window.__horseDebug={bodySize:horseBodySize.toArray(),bounds:horseBox,bones:horseBones,torso:torsoPosition.toArray(),torsoLocal:torsoLocal.toArray(),neckLocal:neckLocal.toArray(),headLocal:headLocal.toArray()};
     console.info('[Wild Country] Horse body scale before tack (meters):',{width:horseBodySize.x,height:horseBodySize.y,length:horseBodySize.z});
-    addHorseTack(model);
+    // The installed horse asset is rendered bareback; no saddle geometry is added.
     loadRancherRider();
     horse.userData.loaded=true;
   }catch(error){assetError('Horse',error);}
