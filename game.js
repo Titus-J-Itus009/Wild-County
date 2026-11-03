@@ -2676,7 +2676,7 @@ function makeAnimal(template, id, targetPosition, scale=1, species='deer', habit
   group.userData={
     health:100,alert:false,mixer,action,template,clipName:idle?.name||null,
     species,label:speciesInfo[species].label,state:'Wandering',
-    observed:observedSpecies.has(species),phase:0,localBounds:bodyBounds,deathPose,groundOffset,
+    observed:observedSpecies.has(species),phase:0,localBounds:bodyBounds,deathPose,model,groundOffset,
     rackId:species==='deer'?rack?.id||'none':null,
     rackPoints:species==='deer'?rack?.points||0:0,
     individualSize,antlerRack,rackParent
@@ -4256,6 +4256,7 @@ function startAnimalDeath(entry){
   group.userData.alert=false;
   group.userData.state='Down';
   removeAnimalFromRayTargets(group);
+  group.position.y=wildlifeGroundHeight(group);
   if(!playAnimalOneShot(entry,['Death'])){
     group.userData.action?.stop();
     entry.deathAnimation={elapsed:0,duration:1.1,side:Math.random()<.5?-1:1};
@@ -4717,6 +4718,10 @@ function updateWildlife(dt){
     const animal=d.group;
     if(d.dead){
       if(animal.userData.mixer)animal.userData.mixer.update(dt);
+      animal.position.y=wildlifeGroundHeight(animal);
+      if(animal.userData.model){
+        animal.userData.model.position.y=-.55;
+      }
       if(d.deathAnimation){
         const animation=d.deathAnimation;
         animation.elapsed=Math.min(animation.duration,animation.elapsed+dt);
