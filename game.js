@@ -4877,7 +4877,21 @@ function updateWildlife(dt){
 }
 
 let dayTime=.32;
-function updateDayNight(dt){dayTime=(dayTime+dt/480)%1;const sunAngle=dayTime*Math.PI*2;sun.position.set(Math.cos(sunAngle)*300*WORLD_SCALE,Math.sin(sunAngle)*300,100*WORLD_SCALE);const daylight=Math.max(.08,Math.sin(sunAngle)*.75+.25);sun.intensity=daylight*2;hemi.intensity=.25+daylight*.9;const sky=new THREE.Color();sky.setHSL(.58,.38,.12+daylight*.58);scene.background=sky;scene.fog.color.copy(sky);scene.fog.density=.00058+(.00018*(1-daylight));}
+const DAY_NIGHT_CYCLE_SECONDS=2400;
+function updateDayNight(dt){
+  dayTime=(dayTime+dt/DAY_NIGHT_CYCLE_SECONDS)%1;
+  const sunAngle=dayTime*Math.PI*2;
+  sun.position.set(Math.cos(sunAngle)*300*WORLD_SCALE,Math.sin(sunAngle)*300,100*WORLD_SCALE);
+  const sunHeight=Math.sin(sunAngle);
+  const daylight=THREE.MathUtils.clamp((sunHeight+.38)/1.38,0.08,1);
+  sun.intensity=daylight*2;
+  hemi.intensity=.25+daylight*.9;
+  const sky=new THREE.Color();
+  sky.setHSL(.58,.38,.12+daylight*.58);
+  scene.background=sky;
+  scene.fog.color.copy(sky);
+  scene.fog.density=.00058+(.00018*(1-daylight));
+}
 
 let fieldNotesTimer=0;
 function updateWeaponPose(dt){
