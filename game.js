@@ -4100,7 +4100,8 @@ function playHorseWhistleSound(){
   }
 }
 function playAnimalDeathCall(species){
-  if(species==='elk'||species==='stag'){if(playRecordedAudio('elk-bugle',.48, species==='stag'?1.12:.9))return;}
+  if(species==='elk')return;
+  if(species==='stag'){if(playRecordedAudio('elk-bugle',.48,1.12))return;}
   if(species==='deer'){if(playRecordedAudio('deer-call',.42,.92))return;}
   const context=audio();
   if(context.state==='suspended')context.resume().catch(error=>{
