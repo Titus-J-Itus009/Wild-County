@@ -4065,7 +4065,8 @@ for(const [name,url] of Object.entries({
   'horse-gallop':'./assets/audio/horse-gallop.ogg',
   'elk-bugle':'./assets/audio/elk-bugle.ogg',
   'deer-call':'./assets/audio/deer-call.ogg',
-  'rifle-shot':'./assets/audio/rifle-shot.ogg'
+  'rifle-shot':'./assets/audio/gun-shot.mp3',
+  'gun-reload':'./assets/audio/gun-reload.mp3'
 }))loadRecordedAudio(name,url);
 
 function updateElkBugling(dt){
@@ -4147,7 +4148,8 @@ function footstep(sprinting=false){if(footstepTimer<=0){
   footstepTimer=sprinting?.28:.43;
 }}
 function gunshot(){
-  if(playRecordedAudio('rifle-shot',1.25,1))return;
+  const shot=playRecordedAudio('rifle-shot',1.25,1);
+  if(shot)return;
 
   const c=audio();
   if(c.state==='suspended')c.resume().catch(()=>{});
@@ -4218,8 +4220,9 @@ function gunshot(){
 function reload(){
   if(!rifleCarried){showMessage('Your rifle is stored in the cabin locker');return;}
   if(reloading||ammo===5||reserve===0)return;
-  reloading=true;showMessage('Reloading...');tone(180,.08,.05);
-  setTimeout(()=>{const needed=5-ammo,take=Math.min(needed,reserve);ammo+=take;reserve-=take;reloading=false;updateAmmo();tone(220,.08,.05);},1200);
+  reloading=true;showMessage('Reloading...');
+  playRecordedAudio('gun-reload',1,1);
+  setTimeout(()=>{const needed=5-ammo,take=Math.min(needed,reserve);ammo+=take;reserve-=take;reloading=false;updateAmmo();},1200);
 }
 
 function playAnimalOneShot(entry,preferred){

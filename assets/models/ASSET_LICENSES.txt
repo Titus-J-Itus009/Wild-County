@@ -32,11 +32,17 @@ rifle.glb — Quaternius Sniper Rifle (replacement model)
 Audio assets
 ============
 
-rifle-shot.ogg
-Source: Wikimedia Commons — Gunshots 8
-URL: https://commons.wikimedia.org/wiki/File:Gunshots_8.ogg
-Original source: https://www.pdsounds.org/sounds/gunshots_8
-License: Public domain
+gun-shot.mp3
+Title: Gun Shot
+Creator: u_62htdrvg4y
+URL: https://pixabay.com/sound-effects/film-special-effects-gun-shot-359196/
+License: Pixabay Content License
+
+gun-reload.mp3
+Title: Gun Reload 2
+Creator: DRAGON-STUDIO
+URL: https://pixabay.com/sound-effects/film-special-effects-gun-reload-2-511308/
+License: Pixabay Content License
 https://poly.pizza/m/i65hEldsw6
 https://static.poly.pizza/2def4aa0-1f3a-40dd-aa92-0661ce39ae50.glb
 Creator: Quaternius
