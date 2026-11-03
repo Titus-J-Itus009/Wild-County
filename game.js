@@ -4150,58 +4150,67 @@ function gunshot(){
   if(c.state==='suspended')c.resume().catch(()=>{});
 
   const now=c.currentTime;
-  const duration=.58;
-  const buffer=c.createBuffer(1,Math.floor(c.sampleRate*duration),c.sampleRate);
-  const data=buffer.getChannelData(0);
-  for(let i=0;i<data.length;i++){
+  const master=c.createGain();
+  master.gain.setValueAtTime(1.75,now);
+  master.gain.exponentialRampToValueAtTime(.001,now+1.3);
+
+  const compressor=c.createDynamicsCompressor();
+  compressor.threshold.value=-8;
+  compressor.knee.value=5;
+  compressor.ratio.value=4;
+  compressor.attack.value=.001;
+  compressor.release.value=.28;
+  master.connect(compressor).connect(c.destination);
+
+  // Sharp muzzle crack.
+  const crackLength=Math.floor(c.sampleRate*.42);
+  const crackBuffer=c.createBuffer(1,crackLength,c.sampleRate);
+  const crackData=crackBuffer.getChannelData(0);
+  for(let i=0;i<crackLength;i++){
     const t=i/c.sampleRate;
-    const crack=Math.exp(-t*18)*(Math.random()*2-1);
-    const after=Math.exp(-t*5)*(Math.random()*2-1)*.38;
-    data[i]=(t<.055?crack:after);
+    const pop=t<.018?Math.exp(-t*135):0;
+    const hiss=Math.exp(-t*7)*(Math.random()*2-1);
+    crackData[i]=pop*(Math.random()*2-1)+hiss*.72;
+  }
+  const crack=c.createBufferSource();
+  crack.buffer=crackBuffer;
+  const crackFilter=c.createBiquadFilter();
+  crackFilter.type='bandpass';
+  crackFilter.frequency.value=1100;
+  crackFilter.Q.value=.32;
+  const crackGain=c.createGain();
+  crackGain.gain.setValueAtTime(2.2,now);
+  crackGain.gain.exponentialRampToValueAtTime(.001,now+.38);
+  crack.connect(crackFilter).connect(crackGain).connect(master);
+
+  // Heavy pressure-wave boom.
+  for(const [frequency,endFrequency,volume,duration] of [
+    [118,31,1.85,.65], [72,22,1.95,.82], [43,18,2.25,1.05]
+  ]){
+    const oscillator=c.createOscillator();
+    oscillator.type='sine';
+    oscillator.frequency.setValueAtTime(frequency,now);
+    oscillator.frequency.exponentialRampToValueAtTime(endFrequency,now+duration);
+    const gain=c.createGain();
+    gain.gain.setValueAtTime(.001,now);
+    gain.gain.linearRampToValueAtTime(volume,now+.008);
+    gain.gain.exponentialRampToValueAtTime(.001,now+duration);
+    oscillator.connect(gain).connect(master);
+    oscillator.start(now);oscillator.stop(now+duration+.05);
   }
 
-  const noise=c.createBufferSource();
-  noise.buffer=buffer;
-  const highpass=c.createBiquadFilter();
-  highpass.type='highpass';
-  highpass.frequency.setValueAtTime(420,now);
-  highpass.frequency.exponentialRampToValueAtTime(95,now+.42);
-  const noiseGain=c.createGain();
-  noiseGain.gain.setValueAtTime(.95,now);
-  noiseGain.gain.exponentialRampToValueAtTime(.001,now+duration);
-  noise.connect(highpass).connect(noiseGain);
+  // Distorted cannon-like transient and low-frequency body.
+  const transient=c.createOscillator();
+  transient.type='square';
+  transient.frequency.setValueAtTime(155,now);
+  transient.frequency.exponentialRampToValueAtTime(48,now+.11);
+  const transientGain=c.createGain();
+  transientGain.gain.setValueAtTime(1.25,now);
+  transientGain.gain.exponentialRampToValueAtTime(.001,now+.18);
+  transient.connect(transientGain).connect(master);
+  transient.start(now);transient.stop(now+.2);
 
-  const thump=c.createOscillator();
-  thump.type='triangle';
-  thump.frequency.setValueAtTime(105,now);
-  thump.frequency.exponentialRampToValueAtTime(38,now+.16);
-  const thumpGain=c.createGain();
-  thumpGain.gain.setValueAtTime(.72,now);
-  thumpGain.gain.exponentialRampToValueAtTime(.001,now+.24);
-  thump.connect(thumpGain);
-
-  const boom=c.createOscillator();
-  boom.type='sine';
-  boom.frequency.setValueAtTime(62,now);
-  boom.frequency.exponentialRampToValueAtTime(28,now+.28);
-  const boomGain=c.createGain();
-  boomGain.gain.setValueAtTime(.58,now);
-  boomGain.gain.exponentialRampToValueAtTime(.001,now+.36);
-  boom.connect(boomGain);
-
-  const limiter=c.createDynamicsCompressor();
-  limiter.threshold.value=-12;
-  limiter.knee.value=4;
-  limiter.ratio.value=12;
-  limiter.attack.value=.002;
-  limiter.release.value=.18;
-  noiseGain.connect(limiter);
-  thumpGain.connect(limiter);
-  boomGain.connect(limiter);
-  limiter.connect(c.destination);
-  noise.start(now);noise.stop(now+duration);
-  thump.start(now);thump.stop(now+.25);
-  boom.start(now);boom.stop(now+.38);
+  crack.start(now);
 }
 function reload(){
   if(!rifleCarried){showMessage('Your rifle is stored in the cabin locker');return;}
