@@ -1551,11 +1551,11 @@ function addRanch(){
   kennelSign.name='Kennel sign';
   scene.add(doghouse);
   registerTerrainAnchor(doghouse,doghouseX,doghouseZ);
-  registerRockCollision(doghouseX,doghouseZ,1.2);
-  registerCollisionSegment(doghouseX-.75,doghouseZ-.55,doghouseX+.75,doghouseZ-.55,.16);
+  // Leave the front of the doghouse open. Colliding the center point made
+  // nearby players appear trapped behind the small structure.
   registerCollisionSegment(doghouseX-.75,doghouseZ-.55,doghouseX-.75,doghouseZ+.55,.16);
   registerCollisionSegment(doghouseX+.75,doghouseZ-.55,doghouseX+.75,doghouseZ+.55,.16);
-  registerCollisionSegment(doghouseX-.75,doghouseZ+.55,doghouseX+.75,doghouseZ+.55,.16);
+  registerCollisionSegment(doghouseX-.75,doghouseZ-.55,doghouseX+.75,doghouseZ-.55,.16);
   kennelPosition=new THREE.Vector3(doghouseX,0,doghouseZ);
 }
 
@@ -1643,6 +1643,8 @@ transformed.y+=sin(position.x*0.9+position.z*0.7+uWildWaterTime*1.35)*0.004;`);
     document.querySelectorAll('[data-dog-breed]').forEach(button=>{
       button.addEventListener('click',()=>{
         applyCustomization('dogBreed',button.dataset.dogBreed);
+        closeKennel();
+        showMessage(`${customizationOptions.dogBreed[button.dataset.dogBreed].label} selected`);
       });
     });
     document.getElementById('closeKennel').addEventListener('click',closeKennel);
@@ -3245,6 +3247,23 @@ function closeKennel(){
   const kennelOverlay=document.getElementById('kennelOverlay');
   kennelOverlay.classList.remove('active');
   kennelOverlay.setAttribute('aria-hidden','true');
+  keys.KeyE=false;
+  if(document.pointerLockElement===renderer.domElement){
+    document.exitPointerLock?.();
+  }
+  if(kennelPosition){
+    let exitX=kennelPosition.x;
+    let exitZ=kennelPosition.z+3.0;
+    if(isBlocked(exitX,exitZ,.32,player)){
+      exitZ=kennelPosition.z-3.0;
+    }
+    player.position.set(exitX,terrainHeight(exitX,exitZ)+.02,exitZ);
+    player.velocity.set(0,0,0);
+    player.verticalVelocity=0;
+    player.onGround=true;
+    player.grounded=true;
+    if(typeof updatePlayerFeet==='function')updatePlayerFeet();
+  }
 }
 
 startButton.addEventListener('click',beginExpedition);
