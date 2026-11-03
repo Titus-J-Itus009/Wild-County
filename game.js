@@ -2383,18 +2383,82 @@ function leatherMaterial(color=0x6b3d22,roughness=.62){
 
 function addHorseTack(model){
   if(!model)return;
-  // Keep the requested horse model completely bareback. Do not add procedural
-  // saddles, blankets, stirrups, bridles, or reins.
-  model.traverse(node=>{
-    if(!node.isMesh)return;
-    const name=(node.name||'').toLowerCase();
-    if(name.includes('saddle')||name.includes('blanket')||name.includes('stirrup')){
-      node.visible=false;
-      node.removeFromParent();
-    }
-  });
-  horse.userData.tack=null;
-  model.userData.horseTack=null;
+  const tack=new THREE.Group();
+  model.add(tack);
+
+  const saddleAnchor=new THREE.Group();
+  model.add(saddleAnchor);
+  model.updateMatrixWorld(true);
+  const bodyBounds=new THREE.Box3().setFromObject(model);
+  const bodySize=bodyBounds.getSize(new THREE.Vector3());
+  const torso=model.getObjectByName('Torso2')||model.getObjectByName('Torso3')||model.getObjectByName('Torso');
+  const desiredBackWorld=new THREE.Vector3();
+  if(torso)torso.getWorldPosition(desiredBackWorld);
+  else desiredBackWorld.set(0,bodyBounds.max.y-bodySize.y*.24,0);
+
+  const desiredBackLocal=model.worldToLocal(desiredBackWorld.clone());
+  desiredBackLocal.y+=.18;
+  const backY=desiredBackLocal.y;
+  saddleAnchor.position.set(desiredBackLocal.x,backY,desiredBackLocal.z-.55);
+  saddleAnchor.scale.setScalar(.62);
+
+  const leather=leatherMaterial(0x704125,.58);
+  const darkLeather=leatherMaterial(0x2d1811,.68);
+  const blanket=new THREE.MeshStandardMaterial({color:0x7b3f31,roughness:.82,side:THREE.DoubleSide});
+  const blanketShape=new THREE.Shape();
+  blanketShape.moveTo(-.58,-.82);blanketShape.quadraticCurveTo(-.68,-.42,-.58,-.02);blanketShape.quadraticCurveTo(-.55,.58,-.42,.72);
+  blanketShape.lineTo(.42,.72);blanketShape.quadraticCurveTo(.55,.58,.58,-.02);blanketShape.quadraticCurveTo(.68,-.42,.58,-.82);blanketShape.closePath();
+  const blanketMesh=new THREE.Mesh(new THREE.ShapeGeometry(blanketShape,12),blanket);
+  blanketMesh.rotation.x=-Math.PI/2;
+  blanketMesh.position.set(0,.05,-.05);
+  saddleAnchor.add(blanketMesh);
+
+  const saddleMaterials=[];
+  loader.load('./assets/models/saddle.glb',gltf=>{
+    try{
+      const saddleModel=gltf.scene;
+      saddleModel.name='Western saddle';
+      saddleModel.scale.setScalar(.4);
+      saddleModel.position.set(0,.025,-.05);
+      saddleModel.traverse(mesh=>{
+        if(!mesh.isMesh)return;
+        mesh.castShadow=true;
+        mesh.receiveShadow=true;
+        const materials=Array.isArray(mesh.material)?mesh.material:[mesh.material];
+        const cloned=materials.map(material=>material.clone());
+        mesh.material=Array.isArray(mesh.material)?cloned:cloned[0];
+        for(const material of cloned){
+          if(material.color)saddleMaterials.push({material,base:material.color.clone()});
+        }
+      });
+      saddleAnchor.add(saddleModel);
+    }catch(error){assetError('Western saddle',error);}
+  },undefined,error=>assetError('Western saddle',error));
+
+  const neck=model.getObjectByName('Neck2')||model.getObjectByName('Neck1')||model.getObjectByName('Torso3')||model;
+  const head=model.getObjectByName('Head')||neck;
+  const bridle=new THREE.Group();tack.add(bridle);
+  const headWorld=new THREE.Vector3(),neckWorld=new THREE.Vector3();
+  head.getWorldPosition(headWorld);neck.getWorldPosition(neckWorld);
+  model.updateMatrixWorld(true);
+  const headLocal=model.worldToLocal(headWorld.clone());
+  const neckLocal=model.worldToLocal(neckWorld.clone());
+  const tube=(points,radius=.018)=>new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points),14,radius,7,false),darkLeather);
+  bridle.add(tube([neckLocal,headLocal.clone().add(new THREE.Vector3(-.18,.08,-.12)),headLocal.clone().add(new THREE.Vector3(-.18,.02,-.34))],.018));
+  bridle.add(tube([neckLocal,headLocal.clone().add(new THREE.Vector3(.18,.08,-.12)),headLocal.clone().add(new THREE.Vector3(.18,.02,-.34))],.018));
+  bridle.add(tube([headLocal.clone().add(new THREE.Vector3(-.22,.02,-.30)),headLocal.clone().add(new THREE.Vector3(0,-.08,-.38)),headLocal.clone().add(new THREE.Vector3(.22,.02,-.30))],.018));
+
+  const reinsGroup=new THREE.Group();horse.add(reinsGroup);reinsGroup.visible=false;
+  for(let i=0;i<2;i++){
+    const rein=new THREE.Mesh(new THREE.BufferGeometry(),darkLeather);
+    rein.frustumCulled=false;
+    reinsGroup.add(rein);ridingReins.push(rein);
+  }
+
+  model.userData.horseTack={tack,bridle,bones:{torso,neck,head},saddleAnchor,blanketMesh,reinsGroup,leather,darkLeather,saddleMaterials};
+  horse.userData.tack=model.userData.horseTack;
+  window.__horseTackDebug={backY,saddlePosition:saddleAnchor.position.toArray(),bodyBounds:{size:bodySize.toArray(),min:bodyBounds.min.toArray(),max:bodyBounds.max.toArray()}};
+  updateRiderSeat();
 }
 
 function deformCowboyToSeat(geometry){
@@ -2777,7 +2841,7 @@ loader.load('./assets/models/horse.glb',gltf=>{
     console.info('[Wild Country] Horse key bone positions:',{torsoWorld:torsoPosition.toArray(),torsoLocal:torsoLocal.toArray(),neckLocal:neckLocal.toArray(),headLocal:headLocal.toArray()});
     window.__horseDebug={bodySize:horseBodySize.toArray(),bounds:horseBox,bones:horseBones,torso:torsoPosition.toArray(),torsoLocal:torsoLocal.toArray(),neckLocal:neckLocal.toArray(),headLocal:headLocal.toArray()};
     console.info('[Wild Country] Horse body scale before tack (meters):',{width:horseBodySize.x,height:horseBodySize.y,length:horseBodySize.z});
-    // The installed horse asset is rendered bareback; no saddle geometry is added.
+    addHorseTack(model);
     loadRancherRider();
     horse.userData.loaded=true;
   }catch(error){assetError('Horse',error);}
