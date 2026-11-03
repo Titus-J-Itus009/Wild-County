@@ -28,6 +28,15 @@ https://static.poly.pizza/d37dbc87-ca61-4b2c-a2da-d2f0c4240bef.glb
 CC0 models require no attribution, although crediting Quaternius is appreciated.
 
 rifle.glb — Quaternius Sniper Rifle (replacement model)
+
+Audio assets
+============
+
+rifle-shot.ogg
+Source: Wikimedia Commons — Gunshots 8
+URL: https://commons.wikimedia.org/wiki/File:Gunshots_8.ogg
+Original source: https://www.pdsounds.org/sounds/gunshots_8
+License: Public domain
 https://poly.pizza/m/i65hEldsw6
 https://static.poly.pizza/2def4aa0-1f3a-40dd-aa92-0661ce39ae50.glb
 Creator: Quaternius
