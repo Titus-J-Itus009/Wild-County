@@ -3300,6 +3300,7 @@ addEventListener('auxclick',e=>e.preventDefault());
 let lastRightClick=0;
 let ammo=5, reserve=15, reloading=false;
 let lastGunshotTime=-Infinity;
+let lastShotClickTime=-Infinity;
 const lastGunshotPosition=new THREE.Vector3();
 const ammoEl=document.querySelector('#ammo b'),statusEl=document.getElementById('status'),messageEl=document.getElementById('message');
 const fieldNotesEl=document.getElementById('fieldNotes');
@@ -4144,7 +4145,64 @@ function footstep(sprinting=false){if(footstepTimer<=0){
   if(!playRecordedAudio('footsteps-gravel',sprinting?.16:.12,sprinting?1.18:.92))tone(72,.09,.025,'triangle');
   footstepTimer=sprinting?.28:.43;
 }}
-function gunshot(){const c=audio(),n=c.createBufferSource(),buffer=c.createBuffer(1,c.sampleRate*.18,c.sampleRate);const data=buffer.getChannelData(0);for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*Math.pow(1-i/data.length,2);n.buffer=buffer;const g=c.createGain();g.gain.value=.45;n.connect(g).connect(c.destination);n.start();tone(55,.12,.12,'square');}
+function gunshot(){
+  const c=audio();
+  if(c.state==='suspended')c.resume().catch(()=>{});
+
+  const now=c.currentTime;
+  const duration=.58;
+  const buffer=c.createBuffer(1,Math.floor(c.sampleRate*duration),c.sampleRate);
+  const data=buffer.getChannelData(0);
+  for(let i=0;i<data.length;i++){
+    const t=i/c.sampleRate;
+    const crack=Math.exp(-t*18)*(Math.random()*2-1);
+    const after=Math.exp(-t*5)*(Math.random()*2-1)*.38;
+    data[i]=(t<.055?crack:after);
+  }
+
+  const noise=c.createBufferSource();
+  noise.buffer=buffer;
+  const highpass=c.createBiquadFilter();
+  highpass.type='highpass';
+  highpass.frequency.setValueAtTime(420,now);
+  highpass.frequency.exponentialRampToValueAtTime(95,now+.42);
+  const noiseGain=c.createGain();
+  noiseGain.gain.setValueAtTime(.95,now);
+  noiseGain.gain.exponentialRampToValueAtTime(.001,now+duration);
+  noise.connect(highpass).connect(noiseGain);
+
+  const thump=c.createOscillator();
+  thump.type='triangle';
+  thump.frequency.setValueAtTime(105,now);
+  thump.frequency.exponentialRampToValueAtTime(38,now+.16);
+  const thumpGain=c.createGain();
+  thumpGain.gain.setValueAtTime(.72,now);
+  thumpGain.gain.exponentialRampToValueAtTime(.001,now+.24);
+  thump.connect(thumpGain);
+
+  const boom=c.createOscillator();
+  boom.type='sine';
+  boom.frequency.setValueAtTime(62,now);
+  boom.frequency.exponentialRampToValueAtTime(28,now+.28);
+  const boomGain=c.createGain();
+  boomGain.gain.setValueAtTime(.58,now);
+  boomGain.gain.exponentialRampToValueAtTime(.001,now+.36);
+  boom.connect(boomGain);
+
+  const limiter=c.createDynamicsCompressor();
+  limiter.threshold.value=-12;
+  limiter.knee.value=4;
+  limiter.ratio.value=12;
+  limiter.attack.value=.002;
+  limiter.release.value=.18;
+  noiseGain.connect(limiter);
+  thumpGain.connect(limiter);
+  boomGain.connect(limiter);
+  limiter.connect(c.destination);
+  noise.start(now);noise.stop(now+duration);
+  thump.start(now);thump.stop(now+.25);
+  boom.start(now);boom.stop(now+.38);
+}
 function reload(){
   if(!rifleCarried){showMessage('Your rifle is stored in the cabin locker');return;}
   if(reloading||ammo===5||reserve===0)return;
@@ -4206,6 +4264,9 @@ function shoot(){
   if(!rifleCarried){showMessage('Your rifle is stored in the cabin locker');return;}
   if(binocularsActive){showMessage('Lower binoculars before using the rifle');return;}
   if(reloading)return;
+  const clickTime=performance.now();
+  if(clickTime-lastShotClickTime<220)return;
+  lastShotClickTime=clickTime;
   if(ammo<=0){showMessage('Empty — press R');tone(100,.05,.05,'square');return;}
   ammo--;updateAmmo();gunshot();recoil=.12;
   lastGunshotTime=performance.now()/1000;
