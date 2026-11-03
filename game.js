@@ -3298,9 +3298,9 @@ addEventListener('contextmenu',e=>e.preventDefault());
 addEventListener('auxclick',e=>e.preventDefault());
 
 let lastRightClick=0;
-let ammo=5, reserve=15, reloading=false;
+const SINGLE_SHOT_CAPACITY=1;
+let ammo=SINGLE_SHOT_CAPACITY, reserve=15, reloading=false;
 let lastGunshotTime=-Infinity;
-let lastShotClickTime=-Infinity;
 const lastGunshotPosition=new THREE.Vector3();
 const ammoEl=document.querySelector('#ammo b'),statusEl=document.getElementById('status'),messageEl=document.getElementById('message');
 const fieldNotesEl=document.getElementById('fieldNotes');
@@ -3332,8 +3332,8 @@ function showMessage(text){messageEl.textContent=text;messageEl.style.opacity='1
 
 function resupplyAmmo(){
   if(reloading){showMessage('Finish reloading before using the ammo box');return;}
-  if(ammo===5&&reserve>=15){showMessage('Ammunition is already full');return;}
-  ammo=5;
+  if(ammo===SINGLE_SHOT_CAPACITY&&reserve>=15){showMessage('Ammunition is already full');return;}
+  ammo=SINGLE_SHOT_CAPACITY;
   reserve=Math.max(reserve,15);
   updateAmmo();
   tone(320,.12,.06);
@@ -3957,7 +3957,7 @@ function loadExpedition(){
     }
     attachCameraToActiveWorld();
     if(player.mounted)player.position.set(horse.position.x,horse.position.y+PLAYER_EYE_HEIGHT,horse.position.z);
-    ammo=Number.isInteger(save.ammo)?THREE.MathUtils.clamp(save.ammo,0,5):ammo;
+    ammo=Number.isInteger(save.ammo)?THREE.MathUtils.clamp(save.ammo,0,SINGLE_SHOT_CAPACITY):ammo;
     reserve=Number.isInteger(save.reserve)?THREE.MathUtils.clamp(save.reserve,0,99):reserve;
     rifleCarried=typeof save.rifleCarried==='boolean'?save.rifleCarried:true;
     kitchenState.stoveOn=Boolean(save.kitchen?.stoveOn);
@@ -4219,10 +4219,10 @@ function gunshot(){
 }
 function reload(){
   if(!rifleCarried){showMessage('Your rifle is stored in the cabin locker');return;}
-  if(reloading||ammo===5||reserve===0)return;
+  if(reloading||ammo===SINGLE_SHOT_CAPACITY||reserve===0)return;
   reloading=true;showMessage('Reloading...');
   playRecordedAudio('gun-reload',1,1);
-  setTimeout(()=>{const needed=5-ammo,take=Math.min(needed,reserve);ammo+=take;reserve-=take;reloading=false;updateAmmo();},1200);
+  setTimeout(()=>{ammo=SINGLE_SHOT_CAPACITY;reserve-=1;reloading=false;updateAmmo();},1200);
 }
 
 function playAnimalOneShot(entry,preferred){
@@ -4279,9 +4279,6 @@ function shoot(){
   if(!rifleCarried){showMessage('Your rifle is stored in the cabin locker');return;}
   if(binocularsActive){showMessage('Lower binoculars before using the rifle');return;}
   if(reloading)return;
-  const clickTime=performance.now();
-  if(clickTime-lastShotClickTime<220)return;
-  lastShotClickTime=clickTime;
   if(ammo<=0){showMessage('Empty — press R');tone(100,.05,.05,'square');return;}
   ammo--;updateAmmo();gunshot();recoil=.12;
   lastGunshotTime=performance.now()/1000;
