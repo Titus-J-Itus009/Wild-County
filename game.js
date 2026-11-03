@@ -2610,7 +2610,7 @@ function placeMountedTrophy(entry,index){
   animal.userData.action=null;
   animal.userData.clipName=null;
   animal.userData.deathPose.rotation.set(0,0,0);
-  animal.userData.deathPose.position.y=.55;
+  animal.userData.deathPose.position.y=0;
   setAnimation(animal.userData,animal.userData.template,['Idle']);
   if(!entry.trophyPlaque){
     const plaque=new THREE.Mesh(
@@ -2640,7 +2640,7 @@ function wildlifeGroundHeight(group){
     renderedGroundHeight(x+footRadius,z),
     renderedGroundHeight(x,z-footRadius),
     renderedGroundHeight(x,z+footRadius)
-  )+.06+(group.userData.groundOffset||0);
+  )+.06;
 }
 
 function makeAnimal(template, id, targetPosition, scale=1, species='deer', habitat=null,rack=species==='deer'?rollDeerRack():null){
@@ -2650,8 +2650,8 @@ function makeAnimal(template, id, targetPosition, scale=1, species='deer', habit
   model.scale.multiplyScalar(scale*individualSize);
   model.rotation.y=Math.PI; // Quaternius animal heads face +Z; game headings use local -Z.
   const deathPose=new THREE.Group();
-  deathPose.position.y=.55;
-  model.position.y=-.55;
+  deathPose.position.y=0;
+  model.position.y=0;
   deathPose.add(model);
   group.add(deathPose);
   const bodyBounds=new THREE.Box3().setFromObject(model);
@@ -4261,7 +4261,7 @@ function startAnimalDeath(entry){
     group.userData.action?.stop();
     entry.deathAnimation={elapsed:0,duration:1.1,side:Math.random()<.5?-1:1};
     group.userData.deathPose.rotation.set(0,0,0);
-    group.userData.deathPose.position.y=.55;
+    group.userData.deathPose.position.y=0;
   }
 }
 
@@ -4720,7 +4720,7 @@ function updateWildlife(dt){
       if(animal.userData.mixer)animal.userData.mixer.update(dt);
       animal.position.y=wildlifeGroundHeight(animal);
       if(animal.userData.model){
-        animal.userData.model.position.y=-.55;
+        animal.userData.model.position.y=0;
       }
       if(d.deathAnimation){
         const animation=d.deathAnimation;
@@ -4728,7 +4728,7 @@ function updateWildlife(dt){
         const progress=animation.elapsed/animation.duration;
         const ease=progress*progress*(3-2*progress);
         animal.userData.deathPose.rotation.z=animation.side*1.22*ease;
-        animal.userData.deathPose.position.y=.55-.12*ease;
+        animal.userData.deathPose.position.y=0;
       }
       continue;
     }
